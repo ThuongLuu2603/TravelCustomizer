@@ -17,30 +17,20 @@ export default function Header() {
           <h1 className="font-bold text-2xl ml-2 text-primary">TravelJourney</h1>
         </div>
         <nav className="hidden md:flex items-center space-x-6">
-          <Link href="/">
-            <a className={`${location === '/' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>
-              Trang chủ
-            </a>
+          <Link href="/" className={`${location === '/' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>
+            Trang chủ
           </Link>
-          <Link href="/destinations">
-            <a className={`${location === '/destinations' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>
-              Điểm đến
-            </a>
+          <Link href="/destinations" className={`${location === '/destinations' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>
+            Điểm đến
           </Link>
-          <Link href="/offers">
-            <a className={`${location === '/offers' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>
-              Ưu đãi
-            </a>
+          <Link href="/offers" className={`${location === '/offers' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>
+            Ưu đãi
           </Link>
-          <Link href="/contact">
-            <a className={`${location === '/contact' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>
-              Liên hệ
-            </a>
+          <Link href="/contact" className={`${location === '/contact' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>
+            Liên hệ
           </Link>
-          <Link href="/login">
-            <a className="bg-primary text-white px-4 py-2 rounded-md hover:bg-blue-600 transition">
-              Đăng nhập
-            </a>
+          <Link href="/login" className="bg-primary text-white px-4 py-2 rounded-md hover:bg-blue-600 transition">
+            Đăng nhập
           </Link>
         </nav>
         <button className="md:hidden text-neutral-700 focus:outline-none">

@@ -46,11 +46,11 @@ export default function Footer() {
           <div>
             <h4 className="font-medium text-lg mb-4">Về chúng tôi</h4>
             <ul className="space-y-2">
-              <li><Link href="/about"><a className="text-neutral-300 hover:text-white">Giới thiệu</a></Link></li>
-              <li><Link href="/news"><a className="text-neutral-300 hover:text-white">Tin tức du lịch</a></Link></li>
-              <li><Link href="/terms"><a className="text-neutral-300 hover:text-white">Điều khoản sử dụng</a></Link></li>
-              <li><Link href="/privacy"><a className="text-neutral-300 hover:text-white">Chính sách bảo mật</a></Link></li>
-              <li><Link href="/contact"><a className="text-neutral-300 hover:text-white">Liên hệ</a></Link></li>
+              <li><Link href="/about" className="text-neutral-300 hover:text-white">Giới thiệu</Link></li>
+              <li><Link href="/news" className="text-neutral-300 hover:text-white">Tin tức du lịch</Link></li>
+              <li><Link href="/terms" className="text-neutral-300 hover:text-white">Điều khoản sử dụng</Link></li>
+              <li><Link href="/privacy" className="text-neutral-300 hover:text-white">Chính sách bảo mật</Link></li>
+              <li><Link href="/contact" className="text-neutral-300 hover:text-white">Liên hệ</Link></li>
             </ul>
           </div>
           
