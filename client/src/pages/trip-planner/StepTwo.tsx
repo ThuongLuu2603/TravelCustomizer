@@ -63,13 +63,23 @@ export default function StepTwo() {
   });
   
   // Selected options
-  const [selectedTransportation, setSelectedTransportation] = useState<number | undefined>(
-    tripData.selectedTransportation
-  );
+  const [selectedTransportation, setSelectedTransportation] = useState<number | undefined>(() => {
+    const savedTransportation = tripData.selectedTransportation;
+    if (savedTransportation && transportationOptions?.some(opt => opt.id === savedTransportation)) {
+      return savedTransportation;
+    }
+    const recommendedOption = transportationOptions?.find(opt => opt.is_recommended);
+    return recommendedOption?.id;
+  });
   
-  const [selectedAccommodations, setSelectedAccommodations] = useState<number[]>(
-    tripData.selectedAccommodations || []
-  );
+  const [selectedAccommodations, setSelectedAccommodations] = useState<number[]>(() => {
+    const savedAccommodations = tripData.selectedAccommodations;
+    if (savedAccommodations?.length && accommodations?.some(acc => savedAccommodations.includes(acc.id))) {
+      return savedAccommodations;
+    }
+    const recommendedAccommodations = accommodations?.filter(acc => acc.is_recommended).map(acc => acc.id);
+    return recommendedAccommodations || [];
+  });
 
   // Calculate total price
   useEffect(() => {
