@@ -125,13 +125,11 @@ export default function Home() {
                 <div className="p-4">
                   <h3 className="font-semibold text-lg mb-1">{destination.name}</h3>
                   <p className="text-neutral-600 text-sm mb-3">{destination.desc}</p>
-                  <Link href="/trip-planner">
-                    <a className="text-blue-600 text-sm font-medium flex items-center hover:text-blue-700">
-                      Khám phá ngay
-                      <svg className="w-4 h-4 ml-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </a>
+                  <Link href="/trip-planner" className="text-blue-600 text-sm font-medium flex items-center hover:text-blue-700">
+                    Khám phá ngay
+                    <svg className="w-4 h-4 ml-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </Link>
                 </div>
               </div>
@@ -148,7 +146,7 @@ export default function Home() {
             Hãy để chúng tôi giúp bạn lập kế hoạch cho một chuyến đi đáng nhớ với những trải nghiệm tuyệt vời
           </p>
           <Link href="/trip-planner">
-            <Button size="lg" className="bg-primary hover:bg-blue-700">
+            <Button size="lg" className="bg-primary hover:bg-blue-700" onClick={(e) => e.preventDefault()}>
               Tạo lịch trình ngay
             </Button>
           </Link>

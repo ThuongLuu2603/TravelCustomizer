@@ -57,21 +57,21 @@ export default function Footer() {
           <div>
             <h4 className="font-medium text-lg mb-4">Dịch vụ</h4>
             <ul className="space-y-2">
-              <li><Link href="/flights"><a className="text-neutral-300 hover:text-white">Đặt vé máy bay</a></Link></li>
-              <li><Link href="/hotels"><a className="text-neutral-300 hover:text-white">Đặt phòng khách sạn</a></Link></li>
-              <li><Link href="/combos"><a className="text-neutral-300 hover:text-white">Combo du lịch</a></Link></li>
-              <li><Link href="/tours"><a className="text-neutral-300 hover:text-white">Tour du lịch</a></Link></li>
-              <li><Link href="/cars"><a className="text-neutral-300 hover:text-white">Thuê xe</a></Link></li>
+              <li><Link href="/flights" className="text-neutral-300 hover:text-white">Đặt vé máy bay</Link></li>
+              <li><Link href="/hotels" className="text-neutral-300 hover:text-white">Đặt phòng khách sạn</Link></li>
+              <li><Link href="/combos" className="text-neutral-300 hover:text-white">Combo du lịch</Link></li>
+              <li><Link href="/tours" className="text-neutral-300 hover:text-white">Tour du lịch</Link></li>
+              <li><Link href="/cars" className="text-neutral-300 hover:text-white">Thuê xe</Link></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-medium text-lg mb-4">Hỗ trợ khách hàng</h4>
             <ul className="space-y-2">
-              <li><Link href="/help"><a className="text-neutral-300 hover:text-white">Trung tâm trợ giúp</a></Link></li>
-              <li><Link href="/faq"><a className="text-neutral-300 hover:text-white">Câu hỏi thường gặp</a></Link></li>
-              <li><Link href="/cancellation"><a className="text-neutral-300 hover:text-white">Chính sách hoàn hủy</a></Link></li>
-              <li><Link href="/payment"><a className="text-neutral-300 hover:text-white">Phương thức thanh toán</a></Link></li>
+              <li><Link href="/help" className="text-neutral-300 hover:text-white">Trung tâm trợ giúp</Link></li>
+              <li><Link href="/faq" className="text-neutral-300 hover:text-white">Câu hỏi thường gặp</Link></li>
+              <li><Link href="/cancellation" className="text-neutral-300 hover:text-white">Chính sách hoàn hủy</Link></li>
+              <li><Link href="/payment" className="text-neutral-300 hover:text-white">Phương thức thanh toán</Link></li>
               <li className="flex items-center">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
