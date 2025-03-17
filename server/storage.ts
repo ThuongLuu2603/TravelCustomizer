@@ -216,10 +216,14 @@ export class MemStorage implements IStorage {
       features: ["Bay thẳng", "Hạng thương gia", "Hành lý 30kg"]
     });
 
-    // Add accommodation types
-    const resort = this.createAccommodationType({ name: "Resort" });
-    const hotel = this.createAccommodationType({ name: "Khách sạn" });
-    const homestay = this.createAccommodationType({ name: "Homestay" });
+    // Add accommodation types (destinations)
+    const hanoi = this.createAccommodationType({ name: "Hà Nội" });
+    const hochiminh = this.createAccommodationType({ name: "Hồ Chí Minh" });
+    const phuquoc = this.createAccommodationType({ name: "Phú Quốc" });
+    const danang = this.createAccommodationType({ name: "Đà Nẵng" });
+    const dalat = this.createAccommodationType({ name: "Đà Lạt" });
+    const nhatrang = this.createAccommodationType({ name: "Nha Trang" });
+    const halong = this.createAccommodationType({ name: "Hạ Long" });
 
     // Add accommodations
     this.createAccommodation({
