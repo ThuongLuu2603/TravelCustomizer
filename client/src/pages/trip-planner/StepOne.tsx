@@ -385,12 +385,14 @@ export default function StepOne() {
                       <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
-                      <SelectValue placeholder="Chọn khu vực" />
+                      <SelectValue placeholder="Chọn Địa Điểm Lưu Trú" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="center">Trung tâm</SelectItem>
-                      <SelectItem value="beach">Bãi biển</SelectItem>
-                      <SelectItem value="mountain">Vùng núi</SelectItem>
+                      <SelectItem value="phuquoc">Phú Quốc</SelectItem>
+                      <SelectItem value="hoian">Hội An</SelectItem>
+                      <SelectItem value="dalat">Đà Lạt</SelectItem>
+                      <SelectItem value="hochiminh">Hồ Chí Minh</SelectItem>
+                      <SelectItem value="hanoi">Hà Nội</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
