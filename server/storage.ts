@@ -130,35 +130,35 @@ export class MemStorage implements IStorage {
       description: "Thủ đô của Việt Nam",
       image_url: ""
     });
-    
+
     const hoChiMinh = this.createLocation({ 
       name: "Hồ Chí Minh", 
       type: "origin", 
       description: "Thành phố lớn nhất Việt Nam",
       image_url: ""
     });
-    
+
     const daNang = this.createLocation({ 
       name: "Đà Nẵng", 
       type: "origin", 
       description: "Thành phố biển miền Trung",
       image_url: ""
     });
-    
+
     const phuQuoc = this.createLocation({ 
       name: "Phú Quốc", 
       type: "destination", 
       description: "Đảo ngọc của Việt Nam",
       image_url: ""
     });
-    
+
     const daLat = this.createLocation({ 
       name: "Đà Lạt", 
       type: "destination", 
       description: "Thành phố mộng mơ",
       image_url: ""
     });
-    
+
     const nhaTrang = this.createLocation({ 
       name: "Nha Trang", 
       type: "destination", 
@@ -166,7 +166,67 @@ export class MemStorage implements IStorage {
       image_url: ""
     });
 
-    // Add transportation options for HCM -> Phu Quoc
+    const haLong = this.createLocation({ 
+      name: "Hạ Long", 
+      type: "destination", 
+      description: "Vịnh Hạ Long kỳ quan thiên nhiên",
+      image_url: ""
+    });
+
+    // Add transportation options
+    this.createTransportationOption({
+      origin_id: hoChiMinh.id,
+      destination_id: phuQuoc.id,
+      type_id: plane.id,
+      departure_time: "07:00",
+      arrival_time: "08:15",
+      price: 1500000,
+      provider: "Vietnam Airlines",
+      is_recommended: true,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+
+    this.createTransportationOption({
+      origin_id: hoChiMinh.id,
+      destination_id: phuQuoc.id,
+      type_id: plane.id,
+      departure_time: "14:00",
+      arrival_time: "15:15", 
+      price: 1200000,
+      provider: "Vietjet Air",
+      is_recommended: false,
+      price_difference: -300000,
+      features: ["Bay thẳng", "Hành lý 7kg"]
+    });
+
+    // Add sample accommodations
+    this.createAccommodation({
+      name: "Vinpearl Resort & Spa Phú Quốc",
+      location_id: phuQuoc.id,
+      address: "Bãi Dài, Gành Dầu, Phú Quốc",
+      type_id: this.createAccommodationType({name: "Khách sạn 5 sao"}).id,
+      rating: 5,
+      price_per_night: 2500000,
+      is_recommended: true,
+      image_url: "https://statics.vinpearl.com/styles/images/2023/04/20/Phoi%20canh%20Vinpearl%20Resort%20Spa%20Phu%20Quoc-14.jpg.webp",
+      features: ["Bể bơi", "Spa", "Nhà hàng", "Bar", "Phòng gym"]
+    });
+
+    this.createAccommodation({
+      name: "InterContinental Phu Quoc Long Beach",
+      location_id: phuQuoc.id,
+      address: "Bãi Trường, Dương Tơ, Phú Quốc",
+      type_id: this.createAccommodationType({name: "Khách sạn 5 sao"}).id,
+      rating: 5,
+      price_per_night: 3000000,
+      is_recommended: false,
+      image_url: "https://cf.bstatic.com/xdata/images/hotel/max1024x768/347812806.jpg?k=c0fff36722d23158cb39f88122d1465f1678fde9d37079eef14d355f59911c10&o=&hp=1",
+      features: ["Bãi biển riêng", "Spa", "Nhà hàng", "Bar"]
+    });
+
+
+    //Add transportation options for HCM -> Phu Quoc - existing code remains
     this.createTransportationOption({
       type_id: plane.id,
       provider: "Vietnam Airlines",
@@ -194,7 +254,7 @@ export class MemStorage implements IStorage {
       price_difference: -510000,
       features: ["Bay thẳng", "Hành lý 7kg"]
     });
-    
+
     const haLong = this.createLocation({ 
       name: "Hạ Long", 
       type: "destination", 
