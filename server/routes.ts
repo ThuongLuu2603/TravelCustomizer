@@ -67,10 +67,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Origin and destination IDs are required" });
       }
 
-      // Assuming transportationOptions is available in this scope
-      const options = transportationOptions.filter(option => 
-        option.origin_id === parseInt(originId as string) && 
-        option.destination_id === parseInt(destinationId as string)
+      const options = await storage.getTransportationOptions(
+        parseInt(originId as string),
+        parseInt(destinationId as string)
       );
       res.json(options);
     } catch (err) {
@@ -96,9 +95,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Location ID is required" });
       }
 
-      // Assuming accommodations is available in this scope
-      const filtered = accommodations.filter(acc => acc.location_id === parseInt(locationId as string));
-      res.json(filtered);
+      const accommodations = await storage.getAccommodations(parseInt(locationId as string));
+      res.json(accommodations);
     } catch (err) {
       handleErrors(err, res);
     }
