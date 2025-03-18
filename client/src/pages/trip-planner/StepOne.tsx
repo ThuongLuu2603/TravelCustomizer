@@ -729,7 +729,7 @@ export default function StepOne() {
                       </svg>
                     }
                     minDate={departureDate}
-                    maxDate={returnDate}
+                    maxDate={returnDate ? addDays(returnDate, -1) : undefined}
                   />
                 </div>
               </div>

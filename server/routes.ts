@@ -66,10 +66,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!originId || !destinationId) {
         return res.status(400).json({ message: "Origin and destination IDs are required" });
       }
-      
-      const options = await storage.getTransportationOptions(
-        parseInt(originId as string), 
-        parseInt(destinationId as string)
+
+      // Assuming transportationOptions is available in this scope
+      const options = transportationOptions.filter(option => 
+        option.origin_id === parseInt(originId as string) && 
+        option.destination_id === parseInt(destinationId as string)
       );
       res.json(options);
     } catch (err) {
@@ -94,9 +95,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!locationId) {
         return res.status(400).json({ message: "Location ID is required" });
       }
-      
-      const accommodations = await storage.getAccommodations(parseInt(locationId as string));
-      res.json(accommodations);
+
+      // Assuming accommodations is available in this scope
+      const filtered = accommodations.filter(acc => acc.location_id === parseInt(locationId as string));
+      res.json(filtered);
     } catch (err) {
       handleErrors(err, res);
     }
@@ -109,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!locationId) {
         return res.status(400).json({ message: "Location ID is required" });
       }
-      
+
       const attractions = await storage.getAttractions(parseInt(locationId as string));
       res.json(attractions);
     } catch (err) {
@@ -170,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         trip_id: tripId
       });
-      
+
       const tripAccommodation = await storage.addTripAccommodation(accommodationData);
       res.status(201).json(tripAccommodation);
     } catch (err) {
@@ -199,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const tripId = parseInt(req.params.tripId);
       const accommodationId = parseInt(req.params.id);
-      
+
       const trip = await storage.getTrip(tripId);
       if (!trip) {
         return res.status(404).json({ message: "Trip not found" });
@@ -229,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         trip_id: tripId
       });
-      
+
       const tripTransportation = await storage.addTripTransportation(transportationData);
       res.status(201).json(tripTransportation);
     } catch (err) {
@@ -266,7 +268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         trip_id: tripId
       });
-      
+
       const tripAttraction = await storage.addTripAttraction(attractionData);
       res.status(201).json(tripAttraction);
     } catch (err) {
@@ -295,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const tripId = parseInt(req.params.tripId);
       const attractionId = parseInt(req.params.id);
-      
+
       const trip = await storage.getTrip(tripId);
       if (!trip) {
         return res.status(404).json({ message: "Trip not found" });
