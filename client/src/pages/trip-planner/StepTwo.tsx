@@ -84,8 +84,26 @@ export default function StepTwo() {
     // Calculate transportation cost
     const transport = transportationOptions?.find(opt => opt.id === selectedTransportation);
     if (transport) {
-      price += transport.price;
+      price += Number(transport.price);
     }
+
+    // Calculate accommodation cost
+    selectedAccommodations.forEach((accomId, index) => {
+      const accom = accommodations?.find(a => a.id === accomId);
+      if (accom && tripData.accommodations?.[index]) {
+        const { checkIn, checkOut } = tripData.accommodations[index];
+        if (checkIn && checkOut) {
+          const nights = Math.ceil(
+            (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 
+            (1000 * 60 * 60 * 24)
+          );
+          price += Number(accom.price_per_night) * nights;
+        }
+      }
+    });
+
+    setTotalPrice(price);
+  }, [selectedTransportation, selectedAccommodations, transportationOptions, accommodations, tripData.accommodations]);
 
     // Calculate accommodation costs
     if (accommodations && tripData.accommodations) {
@@ -230,16 +248,18 @@ export default function StepTwo() {
           {isLoadingAccommodations ? (
             <div className="py-10 text-center">Đang tải...</div>
           ) : (
-            tripData.accommodations?.map((tripAccom, index) => (
-              <div key={index} className="mb-6">
-                <h4 className="font-medium mb-3">
-                  Khách sạn {index + 1}: {tripAccom.location}
-                  {tripAccom.checkIn && tripAccom.checkOut && (
-                    <span className="text-sm text-neutral-500 ml-2">
-                      ({formatDate(new Date(tripAccom.checkIn))} - {formatDate(new Date(tripAccom.checkOut))})
-                    </span>
-                  )}
-                </h4>
+            tripData.accommodations?.map((tripAccom, index) => {
+              const accomOptions = accommodations?.filter(a => a.type_id.toString() === tripAccom.location);
+              return (
+                <div key={index} className="mb-6">
+                  <h4 className="font-medium mb-3">
+                    Khách sạn {index + 1}: {accomOptions?.[0]?.name || "Chưa chọn"}
+                    {tripAccom.checkIn && tripAccom.checkOut && (
+                      <span className="text-sm text-neutral-500 ml-2">
+                        ({formatDate(new Date(tripAccom.checkIn))} - {formatDate(new Date(tripAccom.checkOut))})
+                      </span>
+                    )}
+                  </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {accommodations?.map(accommodation => {
                     const nights = tripAccom.checkIn && tripAccom.checkOut 
