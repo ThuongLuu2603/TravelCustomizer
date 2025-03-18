@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useTripContext } from "@/lib/trip-context"; 
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,10 @@ interface TransportationOption {
   departure_time: string;
   arrival_time: string;
   price: number;
-  operator: string;
+  provider: string;
   is_recommended: boolean;
   price_difference: number;
+  features: string[];
 }
 
 interface Accommodation {
@@ -144,7 +146,7 @@ export default function StepTwo() {
             >
               <CardHeader className="flex flex-row items-center gap-4">
                 <div className="flex-1">
-                  <h4 className="font-medium">{option.operator}</h4>
+                  <h4 className="font-medium">{option.provider}</h4>
                   <p className="text-sm text-muted-foreground">
                     {option.departure_time} - {option.arrival_time}
                   </p>
@@ -202,19 +204,16 @@ export default function StepTwo() {
         ))}
       </div>
 
-      <div className="bg-muted p-4 rounded-lg">
-        <div className="flex justify-between items-center">
-          <span>Tổng chi phí tạm tính:</span>
-          <span className="text-lg font-medium">{totalPrice.toLocaleString()}đ</span>
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-lg font-medium">Tổng chi phí tạm tính:</p>
+          <p className="text-2xl font-bold text-primary">{totalPrice.toLocaleString()}đ</p>
         </div>
-      </div>
-
-      <div className="flex justify-end gap-4">
-        <Button variant="outline" onClick={() => setCurrentStep(1)}>
-          Quay lại
-        </Button>
         <Button onClick={handleSubmit}>
           Tiếp tục
+          <svg className="w-5 h-5 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </Button>
       </div>
     </div>
