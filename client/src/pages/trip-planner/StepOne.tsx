@@ -27,13 +27,13 @@ export default function StepOne() {
 
   // Form state
   const [origin, setOrigin] = useState<string>(
-    tripData.originId?.toString() || ""
+    tripData.origin_id?.toString() || ""
   );
   const [destination, setDestination] = useState<string>(
-    tripData.destinationId?.toString() || ""
+    tripData.destination_id?.toString() || ""
   );
   const [transportationType, setTransportationType] = useState<string>(
-    tripData.transportationTypeId?.toString() || ""
+    tripData.transportation_type_id?.toString() || ""
   );
   const [adults, setAdults] = useState<string>(
     tripData.adults?.toString() || "1"
@@ -42,10 +42,10 @@ export default function StepOne() {
     tripData.children?.toString() || "0"
   );
   const [departureDate, setDepartureDate] = useState<Date | undefined>(
-    tripData.startDate ? new Date(tripData.startDate) : undefined
+    tripData.start_date ? new Date(tripData.start_date) : undefined
   );
   const [returnDate, setReturnDate] = useState<Date | undefined>(
-    tripData.endDate ? new Date(tripData.endDate) : undefined
+    tripData.end_date ? new Date(tripData.end_date) : undefined
   );
 
   // Accommodations state
@@ -327,13 +327,13 @@ export default function StepOne() {
 
         updateTripData({
           tripId: createdTrip.id,
-          originId: parseInt(origin),
-          destinationId: parseInt(destination),
-          transportationTypeId: parseInt(transportationType),
+          origin_id: parseInt(origin),
+          destination_id: parseInt(destination),
+          transportation_type_id: parseInt(transportationType),
           adults: parseInt(adults || "0"),
           children: parseInt(children || "0"),
-          startDate: departureDate ? formatDate(departureDate) : undefined,
-          endDate: returnDate ? formatDate(returnDate) : undefined,
+          start_date: departureDate ? formatDate(departureDate) : undefined,
+          end_date: returnDate ? formatDate(returnDate) : undefined,
           accommodations: formattedAccommodations,
         });
 

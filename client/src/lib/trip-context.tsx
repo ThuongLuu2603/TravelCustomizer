@@ -3,6 +3,12 @@ import { type InsertTrip } from "@shared/schema";
 
 // Define the trip context interface extending InsertTrip
 interface TripContextData extends Partial<InsertTrip> {
+  tripId?: number;
+  origin_id?: number;
+  destination_id?: number;
+  transportation_type_id?: number;
+  start_date?: string;
+  end_date?: string;
   accommodations?: {
     id: number;
     location: string;
