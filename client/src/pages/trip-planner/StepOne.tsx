@@ -76,6 +76,15 @@ export default function StepOne() {
     queryKey: ["/api/locations?type=destination"],
   });
 
+    // Fetch locations from API
+  const { data: locations = [] } = useQuery({
+    queryKey: ['locations'],
+    queryFn: async () => {
+      const response = await fetch('/api/locations');
+      return response.json();
+    }
+  });
+
   // Fetch transportation types
   const { data: transportationTypes } = useQuery({
     queryKey: ["/api/transportation-types"],
@@ -236,7 +245,7 @@ export default function StepOne() {
       const formatDate = (date: Date | undefined) =>
         date ? date.toLocaleDateString("en-CA") : undefined;
 
-      // Giả sử bạn đã fetch locations và lưu vào state
+      // Fetch locations from API
       const originLocation = locations.find(loc => loc.id === parseInt(origin));
       const destinationLocation = locations.find(loc => loc.id === parseInt(destination));
       const originName = originLocation ? originLocation.name : origin;
