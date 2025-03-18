@@ -161,15 +161,16 @@ export const tripAccommodations = pgTable("trip_accommodations", {
   trip_id: integer("trip_id").notNull(), // Reference to trips
   accommodation_id: integer("accommodation_id").notNull(), // Reference to accommodations
   location: text("location").notNull(),
-  checkin: date("checkIn").notNull(),
-  checkout: date("checkOut").notNull(),
+  checkIn: date("checkIn").notNull(),
+  checkOut: date("checkOut").notNull(),
 });
 
-export const insertTripAccommodationSchema = createInsertSchema(tripAccommodations, {
-  location: z.number().transform((val) => val.toString()), // Chuyển number thành string
-  accommodation_id: z.number().optional(), // Đảm bảo optional vì StepOne không gửi
-}).omit({
-  id: true,
+export const insertTripAccommodationSchema = z.object({
+  trip_id: z.number(),
+  location: z.union([z.string(), z.number()]).transform(val => val.toString()),
+  checkIn: z.string(),
+  checkOut: z.string(),
+  accommodation_id: z.number().optional()
 });
 
 export type InsertTripAccommodation = z.infer<typeof insertTripAccommodationSchema>;
