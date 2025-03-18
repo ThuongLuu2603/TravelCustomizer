@@ -140,12 +140,12 @@ export default function StepTwo() {
 
   // Initialize selections
   useEffect(() => {
-    if (transportationOptions && !selectedTransportation) {
-      const recommended = transportationOptions.find(t => t.is_recommended)?.id;
+    if (transportationOptions?.length > 0 && !selectedTransportation) {
+      const recommended = transportationOptions.find(t => t.is_recommended)?.id || transportationOptions[0]?.id;
       if (recommended) setSelectedTransportation(recommended);
     }
 
-    if (accommodations && tripData.accommodations && Object.keys(selectedAccommodations).length === 0) {
+    if (accommodations?.length > 0 && tripData.accommodations && Object.keys(selectedAccommodations).length === 0) {
       const initialAccommodations: { [key: number]: number | null } = {};
       tripData.accommodations.forEach((tripAccom: TripAccommodation) => {
         const recommended = accommodations.find(a => a.is_recommended)?.id || accommodations[0]?.id;

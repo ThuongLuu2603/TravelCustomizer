@@ -728,11 +728,7 @@ export default function StepOne() {
                         />
                       </svg>
                     }
-                    minDate={
-                      accommodation.checkIn
-                        ? addDays(new Date(accommodation.checkIn), 1)
-                        : departureDate
-                    }
+                    minDate={departureDate}
                     maxDate={returnDate}
                   />
                 </div>
