@@ -255,13 +255,6 @@ export class MemStorage implements IStorage {
       features: ["Bay thẳng", "Hành lý 7kg"]
     });
 
-    const haLong = this.createLocation({ 
-      name: "Hạ Long", 
-      type: "destination", 
-      description: "Vịnh Hạ Long kỳ quan thiên nhiên",
-      image_url: ""
-    });
-
     // Transportation types already initialized above
 
     // Add transportation options for HCM -> Phu Quoc
