@@ -173,19 +173,47 @@ export class MemStorage implements IStorage {
     const bus = this.createTransportationType({ name: "Xe khách", icon: "bxs-bus" });
     const car = this.createTransportationType({ name: "Xe riêng", icon: "bxs-car" });
 
-    // Add transportation options
+    // Add transportation options for HCM -> Phu Quoc
     this.createTransportationOption({
       type_id: plane.id,
       provider: "Vietnam Airlines",
-      origin_id: haNoi.id,
+      origin_id: hoChiMinh.id,
       destination_id: phuQuoc.id,
       departure_time: "08:00",
-      arrival_time: "10:15",
-      duration: "2h 15m",
-      price: 2500000,
+      arrival_time: "09:15",
+      duration: "1h 15m",
+      price: 1500000,
       is_recommended: true,
       price_difference: 0,
       features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+
+    this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: hoChiMinh.id,
+      destination_id: phuQuoc.id,
+      departure_time: "10:30",
+      arrival_time: "11:45",
+      duration: "1h 15m",
+      price: 990000,
+      is_recommended: false,
+      price_difference: -510000,
+      features: ["Bay thẳng", "Hành lý 7kg"]
+    });
+
+    this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: hoChiMinh.id,
+      destination_id: phuQuoc.id,
+      departure_time: "14:00",
+      arrival_time: "15:15",
+      duration: "1h 15m",
+      price: 2100000,
+      is_recommended: false,
+      price_difference: 600000,
+      features: ["Bay thẳng", "Hạng thương gia", "Hành lý 30kg"]
     });
 
     this.createTransportationOption({
@@ -225,7 +253,7 @@ export class MemStorage implements IStorage {
     const nhatrang = this.createAccommodationType({ name: "Nha Trang" });
     const halong = this.createAccommodationType({ name: "Hạ Long" });
 
-    // Add accommodations
+    // Add accommodations for Phu Quoc
     this.createAccommodation({
       name: "Vinpearl Resort & Spa",
       location_id: phuQuoc.id,
@@ -237,6 +265,32 @@ export class MemStorage implements IStorage {
       price_difference: 0,
       image_url: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
       features: ["Bãi biển", "Hồ bơi", "Spa", "Phòng gia đình"]
+    });
+
+    this.createAccommodation({
+      name: "Fusion Resort Phu Quoc",
+      location_id: phuQuoc.id,
+      address: "Vung Bau, Phú Quốc",
+      type_id: phuquoc.id,
+      rating: 4.8,
+      price_per_night: 4500000,
+      is_recommended: false,
+      price_difference: 2500000,
+      image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
+      features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"]
+    });
+
+    this.createAccommodation({
+      name: "Nam Nghi Resort",
+      location_id: phuQuoc.id,
+      address: "Mong Tay, Phú Quốc",
+      type_id: phuquoc.id,
+      rating: 4.5,
+      price_per_night: 1500000,
+      is_recommended: false,
+      price_difference: -500000,
+      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
+      features: ["Bãi biển", "Hồ bơi", "Nhà hàng", "Bar"]
     });
 
     this.createAccommodation({
