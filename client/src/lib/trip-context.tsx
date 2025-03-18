@@ -10,7 +10,9 @@ interface TripContextData extends Partial<InsertTrip> {
     checkOut: Date | undefined;
   }[];
   selectedTransportation?: number;
-  selectedAccommodations?: number[];
+  selectedDepartureOption?: number;
+  selectedReturnOption?: number;
+  selectedAccommodations?: { [key: number]: number | null };
   selectedAttractions?: { 
     attractionId: number;
     day: number;
@@ -35,7 +37,9 @@ const TripContext = createContext<TripContextType | undefined>(undefined);
 const defaultTripData: TripContextData = {
   accommodations: [{ id: 1, location: "", checkIn: undefined, checkOut: undefined }],
   selectedTransportation: undefined,
-  selectedAccommodations: [],
+  selectedDepartureOption: undefined,
+  selectedReturnOption: undefined,
+  selectedAccommodations: {},
   selectedAttractions: [],
   totalPrice: 0
 };

@@ -203,15 +203,28 @@ export class MemStorage implements IStorage {
     console.log("Trip accommodations:", Array.from(this.tripAccommodations.values()));
 
     // Add transportation options
+    // Giả sử "plane" là type_id của máy bay
+    // hoChiMinh.id = 1, phuQuoc.id = 2
+
     await this.createTransportationOption({
       type_id: plane.id,
       provider: "Vietnam Airlines",
       origin_id: hoChiMinh.id,
       destination_id: phuQuoc.id,
+
+      // --- Chiều đi ---
+      departure_flight_number: "VN123",
       departure_time: "08:00",
-      arrival_time: "09:15",
-      duration: "1h 15m",
-      price: 1500000,
+      departure_arrival_time: "09:15",
+      departure_baggage: "20kg",
+
+      // --- Chiều về ---
+      return_flight_number: "VN456",
+      return_time: "17:30",
+      return_arrival_time: "18:45",
+      return_baggage: "20kg",
+
+      price: 2800000, // tổng giá khứ hồi
       is_recommended: true,
       price_difference: 0,
       features: ["Bay thẳng", "Hành lý 20kg"]
@@ -222,13 +235,23 @@ export class MemStorage implements IStorage {
       provider: "Vietjet Air",
       origin_id: hoChiMinh.id,
       destination_id: phuQuoc.id,
+
+      // Chiều đi
+      departure_flight_number: "VJ789",
       departure_time: "10:30",
-      arrival_time: "11:45",
-      duration: "1h 15m",
-      price: 990000,
+      departure_arrival_time: "11:45",
+      departure_baggage: "7kg",
+
+      // Chiều về
+      return_flight_number: "VJ790",
+      return_time: "19:00",
+      return_arrival_time: "20:15",
+      return_baggage: "7kg",
+
+      price: 1990000,
       is_recommended: false,
-      price_difference: -510000,
-      features: ["Bay thẳng", "Hành lý 7kg"]
+      price_difference: -810000,
+      features: ["Bay thẳng"]
     });
 
     await this.createTransportationOption({
@@ -236,15 +259,36 @@ export class MemStorage implements IStorage {
       provider: "Bamboo Airways",
       origin_id: hoChiMinh.id,
       destination_id: phuQuoc.id,
+
+      // Chiều đi
+      departure_flight_number: "QH123",
       departure_time: "14:00",
-      arrival_time: "15:15",
-      duration: "1h 15m",
-      price: 2100000,
+      departure_arrival_time: "15:15",
+      departure_baggage: "30kg (Thương gia)",
+
+      // Chiều về
+      return_flight_number: "QH124",
+      return_time: "21:00",
+      return_arrival_time: "22:15",
+      return_baggage: "30kg (Thương gia)",
+
+      price: 3500000,
       is_recommended: false,
-      price_difference: 600000,
-      features: ["Bay thẳng", "Hạng thương gia", "Hành lý 30kg"]
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
     });
 
+
+
+
+
+
+
+
+
+
+
+    
     await this.createTransportationOption({
       type_id: plane.id,
       provider: "Vietjet Air",

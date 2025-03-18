@@ -4,19 +4,57 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface TransportationOption {
   id: number;
   type_id: number;
   origin_id: number;
   destination_id: number;
-  departure_time: string;
-  arrival_time: string;
-  price: number;
   provider: string;
+  // Thông tin chiều đi
+  departure_flight_number: string;
+  departure_time: string;
+  departure_arrival_time: string;
+  departure_baggage: string;
+  // Thông tin chiều về
+  return_flight_number: string;
+  return_time: string;
+  return_arrival_time: string;
+  return_baggage: string;
+  price: number;
   is_recommended: boolean;
   price_difference: number;
   features: string[];
+}
+
+interface DepartureOption {
+  id: number;
+  type_id: number;
+  provider: string;
+  flight_number: string;
+  departure_time: string;
+  arrival_time: string;
+  baggage: string;
+  origin_id: number;
+  destination_id: number;
+  price: number;
+  is_recommended: boolean;
+}
+
+interface ReturnOption {
+  id: number;
+  type_id: number;
+  provider: string;
+  flight_number: string;
+  departure_time: string;
+  arrival_time: string;
+  baggage: string;
+  origin_id: number;
+  destination_id: number;
+  price: number;
+  is_recommended: boolean;
 }
 
 interface Accommodation {
@@ -27,92 +65,196 @@ interface Accommodation {
   type_id: number;
   rating: number;
   price_per_night: number;
-  is_recommended: boolean;
-  price_difference: number;
   image_url: string;
   features: string[];
 }
 
-interface TripAccommodation {
+interface AccommodationInfo {
   id: number;
-  trip_id: number;
-  checkIn?: string;
-  checkOut?: string;
-  location?: string;
+  location: string;
+  checkIn: Date | undefined;
+  checkOut: Date | undefined;
 }
 
 export default function StepTwo() {
   const { tripData, updateTripData, setCurrentStep } = useTripContext();
+
+  // Tổng chi phí tạm tính
   const [totalPrice, setTotalPrice] = useState<number>(0);
-  const [selectedTransportation, setSelectedTransportation] = useState<number | null>(
-    tripData.selectedTransportation || null
+  const [basePrice, setBasePrice] = useState<number>(0);
+
+  // Lựa chọn hiện tại của người dùng
+  const [selectedDepartureOption, setSelectedDepartureOption] = useState<number | null>(
+    tripData.selectedDepartureOption || null
   );
+  
+  const [selectedReturnOption, setSelectedReturnOption] = useState<number | null>(
+    tripData.selectedReturnOption || null
+  );
+  
   const [selectedAccommodations, setSelectedAccommodations] = useState<{ [key: number]: number | null }>(
     tripData.selectedAccommodations || {}
   );
 
-  // Get location data
+  // Lấy thông tin location
   const { data: originLocation } = useQuery({
-    queryKey: [`/api/locations/${tripData.originId}`],
-    enabled: !!tripData.originId,
+    queryKey: [`/api/locations/${tripData.origin_id}`],
+    enabled: !!tripData.origin_id,
   });
-
+  
   const { data: destinationLocation } = useQuery({
-    queryKey: [`/api/locations/${tripData.destinationId}`],
-    enabled: !!tripData.destinationId,
+    queryKey: [`/api/locations/${tripData.destination_id}`],
+    enabled: !!tripData.destination_id,
   });
 
-  // Get transportation options
-  const { data: transportationOptions, isLoading: isLoadingTransport, error: transportError } = useQuery<TransportationOption[]>({
-    queryKey: [`/api/transportation-options?originId=${tripData.originId}&destinationId=${tripData.destinationId}&startDate=${tripData.startDate}`],
-    enabled: !!(tripData.originId && tripData.destinationId && tripData.startDate),
+  // Lấy danh sách phương tiện
+  const {
+    data: transportationOptions,
+    isLoading: isLoadingTransport,
+    error: transportError,
+  } = useQuery<TransportationOption[]>({
+    queryKey: [
+      `/api/transportation-options?originId=${tripData.origin_id}&destinationId=${tripData.destination_id}&startDate=${tripData.start_date}`
+    ],
+    enabled: !!(tripData.origin_id && tripData.destination_id && tripData.start_date),
   });
 
-  // Get accommodations
-  const { data: accommodations, isLoading: isLoadingAccommodations, error: accommodationError } = useQuery<Accommodation[]>({
-    queryKey: [`/api/accommodations?locationId=${tripData.destinationId}&checkIn=${tripData.accommodations?.[0]?.checkIn}`],
-    enabled: !!(tripData.destinationId && tripData.accommodations?.[0]?.checkIn),
+  // Lấy danh sách chỗ ở
+  const {
+    data: accommodations,
+    isLoading: isLoadingAccommodations,
+    error: accommodationError,
+  } = useQuery<Accommodation[]>({
+    queryKey: [
+      `/api/accommodations?locationId=${tripData.destination_id}&checkIn=${tripData.accommodations?.[0]?.checkIn}`
+    ],
+    enabled: !!(tripData.destination_id && tripData.accommodations?.[0]?.checkIn),
   });
 
-  // Debug: Log dữ liệu
+  // Phân tách các option chuyến đi và chuyến về
+  const [departureOptions, setDepartureOptions] = useState<DepartureOption[]>([]);
+  const [returnOptions, setReturnOptions] = useState<ReturnOption[]>([]);
+
   useEffect(() => {
-    console.log("tripData:", tripData);
-    console.log("transportationOptions:", transportationOptions);
-    console.log("accommodations:", accommodations);
-    console.log("transportError:", transportError);
-    console.log("accommodationError:", accommodationError);
-  }, [tripData, transportationOptions, accommodations, transportError, accommodationError]);
+    if (!transportationOptions) return;
+    
+    // Chuyển đổi từ TransportationOption sang DepartureOption và ReturnOption
+    const departures: DepartureOption[] = transportationOptions.map(option => ({
+      id: option.id * 100, // Tạo ID riêng biệt
+      type_id: option.type_id,
+      provider: option.provider,
+      flight_number: option.departure_flight_number,
+      departure_time: option.departure_time,
+      arrival_time: option.departure_arrival_time,
+      baggage: option.departure_baggage,
+      origin_id: option.origin_id,
+      destination_id: option.destination_id,
+      price: option.price / 2, // Chia đôi giá
+      is_recommended: option.is_recommended,
+    }));
 
-  // Calculate total price
-  useEffect(() => {
-    let price = 0;
+    const returns: ReturnOption[] = transportationOptions.map(option => ({
+      id: option.id * 100 + 1, // Tạo ID riêng biệt và khác với departure
+      type_id: option.type_id,
+      provider: option.provider,
+      flight_number: option.return_flight_number,
+      departure_time: option.return_time,
+      arrival_time: option.return_arrival_time,
+      baggage: option.return_baggage,
+      origin_id: option.destination_id, // Đảo ngược chiều
+      destination_id: option.origin_id, // Đảo ngược chiều
+      price: option.price / 2, // Chia đôi giá
+      is_recommended: option.is_recommended,
+    }));
 
-    if (selectedTransportation && transportationOptions) {
-      const transport = transportationOptions.find(t => t.id === selectedTransportation);
-      if (transport) price += transport.price;
+    setDepartureOptions(departures);
+    setReturnOptions(returns);
+    
+    // Thiết lập mặc định nếu chưa có
+    if (!selectedDepartureOption && departures.length > 0) {
+      setSelectedDepartureOption(departures[0].id);
     }
+    if (!selectedReturnOption && returns.length > 0) {
+      setSelectedReturnOption(returns[0].id);
+    }
+  }, [transportationOptions, selectedDepartureOption, selectedReturnOption]);
 
-    if (accommodations && tripData.accommodations) {
-      tripData.accommodations.forEach((tripAccom: TripAccommodation) => {
-        const accommodationId = selectedAccommodations[tripAccom.id];
-        const accommodation = accommodations.find(a => a.id === accommodationId);
-        if (accommodation && tripAccom.checkIn && tripAccom.checkOut) {
+  // Sắp xếp chỗ ở: rẻ nhất lên trước
+  const sortedAccommodations = accommodations
+    ? [...accommodations].sort((a, b) => a.price_per_night - b.price_per_night)
+    : [];
+
+  // Xác định option rẻ nhất cho chỗ ở
+  const cheapestAccommodation = sortedAccommodations.length > 0
+    ? sortedAccommodations[0]
+    : null;
+
+  // Tính giá cơ sở và tổng chi phí tạm tính
+  useEffect(() => {
+    let basePriceValue = 0;
+    let currentPriceValue = 0;
+    
+    // Tính giá vé máy bay cơ bản (cheapest)
+    if (departureOptions.length > 0 && returnOptions.length > 0) {
+      const cheapestDeparture = [...departureOptions].sort((a, b) => a.price - b.price)[0];
+      const cheapestReturn = [...returnOptions].sort((a, b) => a.price - b.price)[0];
+      basePriceValue += cheapestDeparture.price + cheapestReturn.price;
+      
+      // Tính giá vé máy bay hiện tại đang chọn
+      const selectedDeparture = departureOptions.find(o => o.id === selectedDepartureOption);
+      const selectedReturn = returnOptions.find(o => o.id === selectedReturnOption);
+      
+      currentPriceValue += selectedDeparture ? selectedDeparture.price : 0;
+      currentPriceValue += selectedReturn ? selectedReturn.price : 0;
+    }
+    
+    // Tính giá chỗ ở cơ bản (cheapest accommodation)
+    if (cheapestAccommodation && tripData.accommodations) {
+      tripData.accommodations.forEach((tripAccom: AccommodationInfo) => {
+        if (tripAccom.checkIn && tripAccom.checkOut) {
           const nights = Math.ceil(
-            (new Date(tripAccom.checkOut).getTime() - new Date(tripAccom.checkIn).getTime()) / (1000 * 60 * 60 * 24)
+            (new Date(tripAccom.checkOut).getTime() - new Date(tripAccom.checkIn).getTime()) /
+            (1000 * 60 * 60 * 24)
           );
-          price += accommodation.price_per_night * nights;
+          basePriceValue += cheapestAccommodation.price_per_night * nights;
+          
+          // Tính giá chỗ ở hiện tại đang chọn
+          const accommodationId = selectedAccommodations[tripAccom.id];
+          const accom = accommodations?.find(a => a.id === accommodationId);
+          
+          if (accom) {
+            currentPriceValue += accom.price_per_night * nights;
+          } else if (cheapestAccommodation) {
+            currentPriceValue += cheapestAccommodation.price_per_night * nights;
+          }
         }
       });
     }
+    
+    setBasePrice(basePriceValue);
+    setTotalPrice(currentPriceValue);
+  }, [
+    selectedDepartureOption,
+    selectedReturnOption,
+    selectedAccommodations,
+    departureOptions,
+    returnOptions,
+    accommodations,
+    tripData.accommodations,
+    cheapestAccommodation
+  ]);
 
-    setTotalPrice(price);
-  }, [selectedTransportation, selectedAccommodations, transportationOptions, accommodations, tripData.accommodations]);
-
-  // Handle selections
-  const handleSelectTransportation = (transportId: number) => {
-    setSelectedTransportation(transportId);
+  // Xử lý chọn chuyến đi
+  const handleSelectDeparture = (id: number) => {
+    setSelectedDepartureOption(id);
   };
 
+  // Xử lý chọn chuyến về
+  const handleSelectReturn = (id: number) => {
+    setSelectedReturnOption(id);
+  };
+
+  // Xử lý chọn chỗ ở
   const handleSelectAccommodation = (accommodationId: number, tripAccommodationId: number) => {
     setSelectedAccommodations(prev => ({
       ...prev,
@@ -120,173 +262,314 @@ export default function StepTwo() {
     }));
   };
 
-  // Handle form submission
-  const handleSubmit = () => {
-    if (!selectedTransportation) {
-      alert("Vui lòng chọn phương tiện di chuyển");
+  // Nút Quay lại
+  const handleBack = () => {
+    setCurrentStep(1);
+  };
+
+  // Nút Tiếp tục
+  const handleContinue = () => {
+    if (!selectedDepartureOption) {
+      alert("Vui lòng chọn chuyến bay đi");
       return;
     }
-
+    if (!selectedReturnOption) {
+      alert("Vui lòng chọn chuyến bay về");
+      return;
+    }
     if (tripData.accommodations && Object.keys(selectedAccommodations).length < tripData.accommodations.length) {
       alert("Vui lòng chọn đầy đủ chỗ ở cho tất cả các điểm dừng");
       return;
     }
-
+    
     updateTripData({
-      selectedTransportation,
+      selectedDepartureOption,
+      selectedReturnOption,
       selectedAccommodations,
       totalPrice,
     });
+    
     setCurrentStep(3);
   };
 
-  // Initialize selections
+  // Khởi tạo lựa chọn mặc định nếu chưa có
   useEffect(() => {
-    if (transportationOptions?.length > 0 && !selectedTransportation) {
-      const recommended = transportationOptions.find(t => t.is_recommended)?.id || transportationOptions[0]?.id;
-      if (recommended) setSelectedTransportation(recommended);
-    }
-
-    if (accommodations?.length > 0 && tripData.accommodations && Object.keys(selectedAccommodations).length === 0) {
-      const initialAccommodations: { [key: number]: number | null } = {};
-      tripData.accommodations.forEach((tripAccom: TripAccommodation) => {
-        const recommended = accommodations.find(a => a.is_recommended)?.id || accommodations[0]?.id;
-        initialAccommodations[tripAccom.id] = recommended || null;
+    if (sortedAccommodations.length > 0 && tripData.accommodations && Object.keys(selectedAccommodations).length === 0) {
+      const initAccom: { [key: number]: number | null } = {};
+      tripData.accommodations.forEach((tripAccom: AccommodationInfo) => {
+        initAccom[tripAccom.id] = sortedAccommodations[0].id;
       });
-      setSelectedAccommodations(initialAccommodations);
+      setSelectedAccommodations(initAccom);
     }
-  }, [transportationOptions, accommodations, tripData.accommodations]);
+  }, [sortedAccommodations, tripData.accommodations, selectedAccommodations]);
 
   if (isLoadingTransport || isLoadingAccommodations) {
     return <div>Đang tải...</div>;
   }
-
   if (transportError) {
-    return (
-      <div>
-        Lỗi khi tải phương tiện di chuyển: {(transportError as any).message || "Không thể lấy dữ liệu."}
-        <p>Kiểm tra originId: {tripData.originId}, destinationId: {tripData.destinationId}, startDate: {tripData.startDate}</p>
-      </div>
-    );
+    return <div>Lỗi khi tải phương tiện: {(transportError as any).message || "Không thể lấy dữ liệu."}</div>;
   }
-
   if (accommodationError) {
-    return (
-      <div>
-        Lỗi khi tải chỗ ở: {(accommodationError as any).message || "Không thể lấy dữ liệu."}
-        <p>Kiểm tra locationId: {tripData.destinationId}, checkIn: {tripData.accommodations?.[0]?.checkIn}</p>
-      </div>
-    );
+    return <div>Lỗi khi tải chỗ ở: {(accommodationError as any).message || "Không thể lấy dữ liệu."}</div>;
   }
-
-  if (!tripData.originId || !tripData.destinationId) {
-    return <div>Vui lòng chọn điểm đi và điểm đến ở bước trước!</div>;
+  if (!tripData.origin_id || !tripData.destination_id) {
+    return <div>Vui lòng chọn điểm đi và đến ở bước trước!</div>;
   }
-
   if (!tripData.accommodations || tripData.accommodations.length === 0) {
-    return <div>Chưa có thông tin chỗ ở. Vui lòng thêm chỗ ở ở bước trước!</div>;
+    return <div>Chưa có thông tin chỗ ở, vui lòng thêm ở bước trước!</div>;
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <div className="bg-sky-50 p-4 rounded-lg mb-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-2">Tổng chi phí tạm tính</h2>
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-600">Bao gồm phương tiện, lưu trú</div>
+          <div className="text-2xl font-bold text-primary">{totalPrice.toLocaleString()}đ</div>
+        </div>
+        {totalPrice !== basePrice && (
+          <div className="text-right text-sm font-medium text-primary mt-1">
+            {totalPrice > basePrice 
+              ? `+${(totalPrice - basePrice).toLocaleString()}đ so với gói tiết kiệm` 
+              : `Tiết kiệm ${(basePrice - totalPrice).toLocaleString()}đ`}
+          </div>
+        )}
+      </div>
+      
+      {/* PHẦN CHUYẾN BAY ĐI */}
       <div>
         <h3 className="text-lg font-medium mb-4">
-          Chọn phương tiện di chuyển từ {originLocation?.name || "Đang tải..."} đến {destinationLocation?.name || "Đang tải..."}
+          Chuyến đi: {originLocation?.name} → {destinationLocation?.name}
         </h3>
-        {!transportationOptions || transportationOptions.length === 0 ? (
-          <p>Không có phương tiện nào khả dụng cho hành trình này. Kiểm tra originId: {tripData.originId}, destinationId: {tripData.destinationId}, startDate: {tripData.startDate}</p>
+        {departureOptions.length === 0 ? (
+          <p>Không có chuyến bay nào khả dụng.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {transportationOptions.map((option) => (
-              <Card
-                key={option.id}
-                className={cn(
-                  "cursor-pointer transition-all hover:shadow-md",
-                  selectedTransportation === option.id && "ring-2 ring-primary bg-blue-50"
-                )}
-                onClick={() => handleSelectTransportation(option.id)}
-              >
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{option.provider}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {option.departure_time} - {option.arrival_time}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{option.price.toLocaleString()}đ</p>
-                    {option.is_recommended && (
-                      <span className="text-sm text-green-600">Đề xuất</span>
-                    )}
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
+          <div className="grid grid-cols-1 gap-4">
+            {departureOptions.map((option) => {
+              const cheapestOption = [...departureOptions].sort((a, b) => a.price - b.price)[0];
+              const delta = option.price - cheapestOption.price;
+              const isSelected = selectedDepartureOption === option.id;
+              
+              return (
+                <Card
+                  key={option.id}
+                  onClick={() => handleSelectDeparture(option.id)}
+                  className={cn(
+                    "cursor-pointer transition-all hover:shadow-md",
+                    isSelected && "ring-2 ring-primary bg-blue-50"
+                  )}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-center">
+                          <div className="font-semibold">{option.departure_time}</div>
+                          <div className="text-xs text-gray-500">{originLocation?.name}</div>
+                        </div>
+                        
+                        <div className="flex flex-col items-center">
+                          <div className="text-xs text-gray-500">{option.flight_number}</div>
+                          <div className="relative w-28 h-6 flex items-center">
+                            <div className="border-t border-gray-300 w-full"></div>
+                            <div className="absolute right-0 text-gray-500">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500">{option.provider}</div>
+                        </div>
+                        
+                        <div className="text-center">
+                          <div className="font-semibold">{option.arrival_time}</div>
+                          <div className="text-xs text-gray-500">{destinationLocation?.name}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end">
+                        {isSelected && (
+                          <Badge className="mb-1" variant="outline">Đã chọn</Badge>
+                        )}
+                        {delta > 0 && (
+                          <span className="text-xs font-medium text-primary mb-1">
+                            +{delta.toLocaleString()}đ
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      
+      {/* PHẦN CHUYẾN BAY VỀ */}
+      <div>
+        <h3 className="text-lg font-medium mb-4">
+          Chuyến về: {destinationLocation?.name} → {originLocation?.name}
+        </h3>
+        {returnOptions.length === 0 ? (
+          <p>Không có chuyến bay nào khả dụng.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {returnOptions.map((option) => {
+              const cheapestOption = [...returnOptions].sort((a, b) => a.price - b.price)[0];
+              const delta = option.price - cheapestOption.price;
+              const isSelected = selectedReturnOption === option.id;
+              
+              return (
+                <Card
+                  key={option.id}
+                  onClick={() => handleSelectReturn(option.id)}
+                  className={cn(
+                    "cursor-pointer transition-all hover:shadow-md",
+                    isSelected && "ring-2 ring-primary bg-blue-50"
+                  )}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-center">
+                          <div className="font-semibold">{option.departure_time}</div>
+                          <div className="text-xs text-gray-500">{destinationLocation?.name}</div>
+                        </div>
+                        
+                        <div className="flex flex-col items-center">
+                          <div className="text-xs text-gray-500">{option.flight_number}</div>
+                          <div className="relative w-28 h-6 flex items-center">
+                            <div className="border-t border-gray-300 w-full"></div>
+                            <div className="absolute right-0 text-gray-500">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500">{option.provider}</div>
+                        </div>
+                        
+                        <div className="text-center">
+                          <div className="font-semibold">{option.arrival_time}</div>
+                          <div className="text-xs text-gray-500">{originLocation?.name}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end">
+                        {isSelected && (
+                          <Badge className="mb-1" variant="outline">Đã chọn</Badge>
+                        )}
+                        {delta > 0 && (
+                          <span className="text-xs font-medium text-primary mb-1">
+                            +{delta.toLocaleString()}đ
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
 
+      <Separator className="my-6" />
+
+      {/* PHẦN HIỂN THỊ CHỖ Ở */}
       <div>
         <h3 className="text-lg font-medium mb-4">Chọn chỗ ở</h3>
-        {tripData.accommodations.map((tripAccom: TripAccommodation) => (
+        {tripData.accommodations.map((tripAccom: AccommodationInfo) => (
           <div key={tripAccom.id} className="mb-6">
             <h4 className="font-medium mb-2">
-              Chỗ ở {tripAccom.id}
+              Chỗ ở tại {destinationLocation?.name}{" "}
               {tripAccom.checkIn && tripAccom.checkOut && (
                 <span className="text-sm text-muted-foreground">
-                  {" "}({new Date(tripAccom.checkIn).toLocaleDateString()} - {new Date(tripAccom.checkOut).toLocaleDateString()})
+                  ({new Date(tripAccom.checkIn).toLocaleDateString()} - {new Date(tripAccom.checkOut).toLocaleDateString()})
                 </span>
               )}
             </h4>
-            {!accommodations || accommodations.length === 0 ? (
-              <p>Không có chỗ ở nào khả dụng tại điểm đến này. Kiểm tra locationId: {tripData.destinationId}, checkIn: {tripData.accommodations?.[0]?.checkIn}</p>
+            {sortedAccommodations.length === 0 ? (
+              <p>Không có chỗ ở khả dụng.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {accommodations.map((accom) => (
-                  <Card
-                    key={accom.id}
-                    className={cn(
-                      "cursor-pointer transition-all hover:shadow-md",
-                      selectedAccommodations[tripAccom.id] === accom.id && "ring-2 ring-primary bg-blue-50"
-                    )}
-                    onClick={() => handleSelectAccommodation(accom.id, tripAccom.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex gap-4">
-                        <img
-                          src={accom.image_url || "https://placehold.co/100"}
-                          alt={accom.name}
-                          className="w-24 h-24 object-cover rounded"
-                        />
-                        <div className="flex-1">
-                          <h5 className="font-medium">{accom.name}</h5>
-                          <p className="text-sm text-muted-foreground">{accom.address}</p>
-                          <div className="mt-2">
-                            <p className="font-medium">{accom.price_per_night.toLocaleString()}đ/đêm</p>
-                            {accom.is_recommended && (
-                              <span className="text-sm text-green-600">Đề xuất</span>
+                {sortedAccommodations.map((accom) => {
+                  let nights = 1;
+                  if (tripAccom.checkIn && tripAccom.checkOut) {
+                    nights = Math.ceil(
+                      (new Date(tripAccom.checkOut).getTime() - new Date(tripAccom.checkIn).getTime()) /
+                      (1000 * 60 * 60 * 24)
+                    );
+                  }
+                  
+                  const delta = cheapestAccommodation
+                    ? (accom.price_per_night - cheapestAccommodation.price_per_night) * nights
+                    : 0;
+                    
+                  const isSelected = selectedAccommodations[tripAccom.id] === accom.id;
+                  
+                  return (
+                    <Card
+                      key={accom.id}
+                      onClick={() => handleSelectAccommodation(accom.id, tripAccom.id)}
+                      className={cn(
+                        "cursor-pointer transition-all hover:shadow-md",
+                        isSelected && "ring-2 ring-primary bg-blue-50"
+                      )}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex gap-4">
+                          <img
+                            src={accom.image_url || "https://placehold.co/100"}
+                            alt={accom.name}
+                            className="w-24 h-24 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h5 className="font-medium">{accom.name}</h5>
+                              {isSelected && (
+                                <Badge variant="outline">Đã chọn</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{accom.address}</p>
+                            <div className="flex items-center mt-1">
+                              <div className="text-yellow-500 mr-1">★</div>
+                              <span className="text-sm">{accom.rating}</span>
+                            </div>
+                            {delta > 0 && (
+                              <p className="text-sm font-medium text-primary mt-1">
+                                +{delta.toLocaleString()}đ
+                              </p>
+                            )}
+                            {delta < 0 && (
+                              <p className="text-sm font-medium text-green-600 mt-1">
+                                {delta.toLocaleString()}đ
+                              </p>
                             )}
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
         ))}
       </div>
 
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="text-lg font-medium">Tổng chi phí tạm tính:</p>
-          <p className="text-2xl font-bold text-primary">{totalPrice.toLocaleString()}đ</p>
-        </div>
-        <Button onClick={handleSubmit}>
+      {/* NÚT QUAY LẠI / TIẾP TỤC Ở DƯỚI CÙNG */}
+      <div className="flex justify-between p-6 pt-4">
+        <Button variant="outline" onClick={handleBack} className="px-4 py-2">
+          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Quay lại
+        </Button>
+        <Button onClick={handleContinue} className="bg-primary hover:bg-blue-700 text-white px-6 py-2">
           Tiếp tục
           <svg className="w-5 h-5 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </Button>
       </div>
