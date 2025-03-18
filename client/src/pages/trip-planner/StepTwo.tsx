@@ -339,7 +339,7 @@ export default function StepTwo() {
       {/* PHẦN CHUYẾN BAY ĐI */}
       <div>
         <h3 className="text-lg font-medium mb-4">
-          Chuyến đi: {originLocation?.name} → {destinationLocation?.name}
+          Chuyến đi: {originLocation && originLocation.name ? originLocation.name : ''} → {destinationLocation && destinationLocation.name ? destinationLocation.name : ''}
         </h3>
         {departureOptions.length === 0 ? (
           <p>Không có chuyến bay nào khả dụng.</p>
@@ -364,7 +364,7 @@ export default function StepTwo() {
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
                           <div className="font-semibold">{option.departure_time}</div>
-                          <div className="text-xs text-gray-500">{originLocation?.name}</div>
+                          <div className="text-xs text-gray-500">{originLocation && originLocation.name ? originLocation.name : ''}</div>
                         </div>
                         
                         <div className="flex flex-col items-center">
@@ -382,7 +382,7 @@ export default function StepTwo() {
                         
                         <div className="text-center">
                           <div className="font-semibold">{option.arrival_time}</div>
-                          <div className="text-xs text-gray-500">{destinationLocation?.name}</div>
+                          <div className="text-xs text-gray-500">{destinationLocation && destinationLocation.name ? destinationLocation.name : ''}</div>
                         </div>
                       </div>
                       
@@ -408,7 +408,7 @@ export default function StepTwo() {
       {/* PHẦN CHUYẾN BAY VỀ */}
       <div>
         <h3 className="text-lg font-medium mb-4">
-          Chuyến về: {destinationLocation?.name} → {originLocation?.name}
+          Chuyến về: {destinationLocation && destinationLocation.name ? destinationLocation.name : ''} → {originLocation && originLocation.name ? originLocation.name : ''}
         </h3>
         {returnOptions.length === 0 ? (
           <p>Không có chuyến bay nào khả dụng.</p>
@@ -433,7 +433,7 @@ export default function StepTwo() {
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
                           <div className="font-semibold">{option.departure_time}</div>
-                          <div className="text-xs text-gray-500">{destinationLocation?.name}</div>
+                          <div className="text-xs text-gray-500">{destinationLocation && destinationLocation.name ? destinationLocation.name : ''}</div>
                         </div>
                         
                         <div className="flex flex-col items-center">
@@ -451,7 +451,7 @@ export default function StepTwo() {
                         
                         <div className="text-center">
                           <div className="font-semibold">{option.arrival_time}</div>
-                          <div className="text-xs text-gray-500">{originLocation?.name}</div>
+                          <div className="text-xs text-gray-500">{originLocation && originLocation.name ? originLocation.name : ''}</div>
                         </div>
                       </div>
                       
@@ -482,7 +482,7 @@ export default function StepTwo() {
         {tripData.accommodations.map((tripAccom: AccommodationInfo) => (
           <div key={tripAccom.id} className="mb-6">
             <h4 className="font-medium mb-2">
-              Chỗ ở tại {destinationLocation?.name}{" "}
+              Chỗ ở tại {destinationLocation && destinationLocation.name ? destinationLocation.name : ''}{" "}
               {tripAccom.checkIn && tripAccom.checkOut && (
                 <span className="text-sm text-muted-foreground">
                   ({new Date(tripAccom.checkIn).toLocaleDateString()} - {new Date(tripAccom.checkOut).toLocaleDateString()})
