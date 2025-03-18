@@ -159,6 +159,35 @@ export class MemStorage implements IStorage {
       description: "Thành phố biển nổi tiếng",
       image_url: ""
     });
+
+    // Add transportation options for HCM -> Phu Quoc
+    this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: hoChiMinh.id,
+      destination_id: phuQuoc.id,
+      departure_time: "08:00",
+      arrival_time: "09:15", 
+      duration: "1h 15m",
+      price: 1500000,
+      is_recommended: true,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+
+    this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air", 
+      origin_id: hoChiMinh.id,
+      destination_id: phuQuoc.id,
+      departure_time: "10:30",
+      arrival_time: "11:45",
+      duration: "1h 15m", 
+      price: 990000,
+      is_recommended: false,
+      price_difference: -510000,
+      features: ["Bay thẳng", "Hành lý 7kg"]
+    });
     
     const haLong = this.createLocation({ 
       name: "Hạ Long", 
@@ -265,6 +294,19 @@ export class MemStorage implements IStorage {
       price_difference: 0,
       image_url: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
       features: ["Bãi biển", "Hồ bơi", "Spa", "Phòng gia đình"]
+    });
+
+    this.createAccommodation({
+      name: "Novotel Phú Quốc Resort",
+      location_id: phuQuoc.id,
+      address: "Dương Đông, Phú Quốc",
+      type_id: phuquoc.id,
+      rating: 4.7,
+      price_per_night: 1625000,
+      is_recommended: false,
+      price_difference: -375000,
+      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
+      features: ["Bãi biển", "Hồ bơi", "Quầy bar"]
     });
 
     this.createAccommodation({
