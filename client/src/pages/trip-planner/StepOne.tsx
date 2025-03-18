@@ -27,25 +27,25 @@ export default function StepOne() {
 
   // Form state
   const [origin, setOrigin] = useState<string>(
-    tripData.originId?.toString() || "",
+    tripData.originId?.toString() || ""
   );
   const [destination, setDestination] = useState<string>(
-    tripData.destinationId?.toString() || "",
+    tripData.destinationId?.toString() || ""
   );
   const [transportationType, setTransportationType] = useState<string>(
-    tripData.transportationTypeId?.toString() || "",
+    tripData.transportationTypeId?.toString() || ""
   );
   const [adults, setAdults] = useState<string>(
-    tripData.adults?.toString() || "1",
+    tripData.adults?.toString() || "1"
   );
   const [children, setChildren] = useState<string>(
-    tripData.children?.toString() || "0",
+    tripData.children?.toString() || "0"
   );
   const [departureDate, setDepartureDate] = useState<Date | undefined>(
-    tripData.startDate ? new Date(tripData.startDate) : undefined,
+    tripData.startDate ? new Date(tripData.startDate) : undefined
   );
   const [returnDate, setReturnDate] = useState<Date | undefined>(
-    tripData.endDate ? new Date(tripData.endDate) : undefined,
+    tripData.endDate ? new Date(tripData.endDate) : undefined
   );
 
   // Accommodations state
@@ -64,20 +64,25 @@ export default function StepOne() {
         checkIn: undefined,
         checkOut: undefined,
       },
-    ],
+    ]
   );
 
-  // Fetch locations
-  const { data: origins } = useQuery({
+  // Fetch data using useQuery
+  const {
+    data: origins = [], // Default to empty array if data is undefined
+  } = useQuery({
     queryKey: ["/api/locations?type=origin"],
   });
 
-  const { data: destinations } = useQuery({
+  const {
+    data: destinations = [], // Default to empty array if data is undefined
+  } = useQuery({
     queryKey: ["/api/locations?type=destination"],
   });
 
-  // Fetch transportation types
-  const { data: transportationTypes } = useQuery({
+  const {
+    data: transportationTypes = [], // Default to empty array if data is undefined
+  } = useQuery({
     queryKey: ["/api/transportation-types"],
   });
 
@@ -109,8 +114,8 @@ export default function StepOne() {
   const updateAccommodation = (id: number, field: string, value: any) => {
     setAccommodations(
       accommodations.map((a) =>
-        a.id === id ? { ...a, [field]: value } : a,
-      ),
+        a.id === id ? { ...a, [field]: value instanceof Date ? value : undefined } : a
+      )
     );
   };
 
@@ -181,7 +186,11 @@ export default function StepOne() {
         return false;
       }
 
-      if (!accom.checkIn) {
+      // Đảm bảo checkIn và checkOut không undefined, sử dụng giá trị mặc định nếu cần
+      const effectiveCheckIn = accom.checkIn || departureDate;
+      const effectiveCheckOut = accom.checkOut || returnDate;
+
+      if (!effectiveCheckIn) {
         toast({
           title: "Lỗi",
           description: "Vui lòng chọn ngày nhận phòng",
@@ -190,7 +199,7 @@ export default function StepOne() {
         return false;
       }
 
-      if (!accom.checkOut) {
+      if (!effectiveCheckOut) {
         toast({
           title: "Lỗi",
           description: "Vui lòng chọn ngày trả phòng",
@@ -199,7 +208,7 @@ export default function StepOne() {
         return false;
       }
 
-      if (accom.checkOut <= accom.checkIn) {
+      if (effectiveCheckOut <= effectiveCheckIn) {
         toast({
           title: "Lỗi",
           description: "Ngày trả phòng phải sau ngày nhận phòng",
@@ -208,7 +217,7 @@ export default function StepOne() {
         return false;
       }
 
-      if (accom.checkIn < departureDate) {
+      if (effectiveCheckIn < departureDate) {
         toast({
           title: "Lỗi",
           description: "Ngày nhận phòng không thể trước ngày đi",
@@ -217,7 +226,7 @@ export default function StepOne() {
         return false;
       }
 
-      if (accom.checkOut > returnDate) {
+      if (effectiveCheckOut > returnDate) {
         toast({
           title: "Lỗi",
           description: "Ngày trả phòng không thể sau ngày về",
@@ -236,22 +245,27 @@ export default function StepOne() {
       const formatDate = (date: Date | undefined) =>
         date ? date.toLocaleDateString("en-CA") : undefined;
 
-      // Giả sử bạn đã fetch locations và lưu vào state
-      const originLocation = locations.find(loc => loc.id === parseInt(origin));
-      const destinationLocation = locations.find(loc => loc.id === parseInt(destination));
+      // Sử dụng origins và destinations
+      const originLocation = origins.find((loc: any) => loc.id === parseInt(origin));
+      const destinationLocation = destinations.find((loc: any) => loc.id === parseInt(destination));
       const originName = originLocation ? originLocation.name : origin;
       const destinationName = destinationLocation ? destinationLocation.name : destination;
 
+      // Đảm bảo checkIn và checkOut không undefined
       const formattedAccommodations = accommodations.map((accom) => ({
         ...accom,
-        checkIn: accom.checkIn ? formatDate(accom.checkIn) : undefined,
-        checkOut: accom.checkOut ? formatDate(accom.checkOut) : undefined,
+        checkIn: accom.checkIn || departureDate, // Sử dụng departureDate làm giá trị mặc định
+        checkOut: accom.checkOut || returnDate, // Sử dụng returnDate làm giá trị mặc định
+      })).map((accom) => ({
+        ...accom,
+        checkIn: formatDate(accom.checkIn),
+        checkOut: formatDate(accom.checkOut),
       }));
 
       const tripPayload = {
         trip: {
           user_id: 1,
-          name: `Chuyến đi từ ${originName} đến ${destinationName}`, // Sửa tên chuyến đi
+          name: `Chuyến đi từ ${originName} đến ${destinationName}`,
           origin_id: parseInt(origin),
           destination_id: parseInt(destination),
           start_date: departureDate ? formatDate(departureDate) : undefined,
@@ -264,7 +278,7 @@ export default function StepOne() {
         accommodations: formattedAccommodations.map((accom) => ({
           checkIn: accom.checkIn,
           checkOut: accom.checkOut,
-          location: parseInt(accom.location), // Đảm bảo location là number
+          location: parseInt(accom.location?.toString() || "0"),
         })),
       };
 
@@ -321,32 +335,19 @@ export default function StepOne() {
       setReturnDate(defaultReturnDate);
     }
 
-    // Set default check-in dates
-    if (departureDate && accommodations.length > 0) {
-      const updatedAccommodations = accommodations.map((accom, index) => {
-        if (!accom.checkIn) {
-          const checkIn = index === 0 ? new Date(departureDate) : undefined;
-          return { ...accom, checkIn };
-        }
-        return accom;
-      });
-      if (JSON.stringify(updatedAccommodations) !== JSON.stringify(accommodations)) {
-        setAccommodations(updatedAccommodations);
-      }
-    }
-
-    // Set default check-out dates
-    if (returnDate && accommodations.length > 0) {
+    // Cập nhật checkIn và checkOut cho accommodations
+    if (departureDate && returnDate && accommodations.length > 0) {
       const updatedAccommodations = accommodations.map((accom, index, arr) => {
-        if (!accom.checkOut) {
-          const checkOut = index === arr.length - 1 ? new Date(returnDate) : undefined;
-          return { ...accom, checkOut };
+        const newAccom = { ...accom };
+        if (!newAccom.checkIn && index === 0) {
+          newAccom.checkIn = new Date(departureDate);
         }
-        return accom;
+        if (!newAccom.checkOut && index === arr.length - 1) {
+          newAccom.checkOut = new Date(returnDate);
+        }
+        return newAccom;
       });
-      if (JSON.stringify(updatedAccommodations) !== JSON.stringify(accommodations)) {
-        setAccommodations(updatedAccommodations);
-      }
+      setAccommodations(updatedAccommodations);
     }
   }, [departureDate, returnDate]);
 
@@ -391,7 +392,7 @@ export default function StepOne() {
                   <SelectValue placeholder="Chọn điểm xuất phát" />
                 </SelectTrigger>
                 <SelectContent>
-                  {origins?.map((location: any) => (
+                  {origins.map((location: any) => (
                     <SelectItem
                       key={location.id}
                       value={location.id.toString()}
@@ -433,7 +434,7 @@ export default function StepOne() {
                   <SelectValue placeholder="Chọn điểm đến" />
                 </SelectTrigger>
                 <SelectContent>
-                  {destinations?.map((location: any) => (
+                  {destinations.map((location: any) => (
                     <SelectItem
                       key={location.id}
                       value={location.id.toString()}
@@ -475,7 +476,7 @@ export default function StepOne() {
                 <SelectValue placeholder="Chọn phương tiện" />
               </SelectTrigger>
               <SelectContent>
-                {transportationTypes?.map((type: any) => (
+                {transportationTypes.map((type: any) => (
                   <SelectItem key={type.id} value={type.id.toString()}>
                     {type.name}
                   </SelectItem>
@@ -649,7 +650,7 @@ export default function StepOne() {
                       updateAccommodation(
                         accommodation.id,
                         "location",
-                        parseInt(value),
+                        parseInt(value)
                       )
                     }
                   >
@@ -673,7 +674,7 @@ export default function StepOne() {
                       <SelectValue placeholder="Chọn Địa Điểm Lưu Trú" />
                     </SelectTrigger>
                     <SelectContent>
-                      {destinations?.map((location: any) => (
+                      {destinations.map((location: any) => (
                         <SelectItem
                           key={location.id}
                           value={location.id.toString()}
@@ -691,7 +692,7 @@ export default function StepOne() {
                       updateAccommodation(
                         accommodation.id,
                         "checkIn",
-                        date,
+                        date
                       )
                     }
                     label="Ngày nhận phòng"
@@ -722,7 +723,7 @@ export default function StepOne() {
                       updateAccommodation(
                         accommodation.id,
                         "checkOut",
-                        date,
+                        date
                       )
                     }
                     label="Ngày trả phòng"
@@ -743,7 +744,7 @@ export default function StepOne() {
                       </svg>
                     }
                     minDate={departureDate}
-                    maxDate={returnDate} // Sửa lại để cho phép check-out bằng returnDate
+                    maxDate={returnDate}
                   />
                 </div>
               </div>
