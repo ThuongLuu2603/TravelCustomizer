@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { useTripContext } from "@/lib/trip-context"; 
+import { useTripContext } from "@/lib/trip-context";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -34,13 +33,21 @@ interface Accommodation {
   features: string[];
 }
 
+interface TripAccommodation {
+  id: number;
+  trip_id: number;
+  checkIn?: string;
+  checkOut?: string;
+  location?: string;
+}
+
 export default function StepTwo() {
   const { tripData, updateTripData, setCurrentStep } = useTripContext();
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [selectedTransportation, setSelectedTransportation] = useState<number | null>(
     tripData.selectedTransportation || null
   );
-  const [selectedAccommodations, setSelectedAccommodations] = useState<{[key: number]: number}>(
+  const [selectedAccommodations, setSelectedAccommodations] = useState<{ [key: number]: number | null }>(
     tripData.selectedAccommodations || {}
   );
 
@@ -67,25 +74,31 @@ export default function StepTwo() {
     enabled: !!tripData.destinationId,
   });
 
+  // Debug: Log dữ liệu
+  useEffect(() => {
+    console.log("tripData:", tripData);
+    console.log("transportationOptions:", transportationOptions);
+    console.log("accommodations:", accommodations);
+  }, [tripData, transportationOptions, accommodations]);
+
   // Calculate total price
   useEffect(() => {
     let price = 0;
 
-    // Add transportation price
     if (selectedTransportation && transportationOptions) {
       const transport = transportationOptions.find(t => t.id === selectedTransportation);
-      if (transport) {
-        price += transport.price;
-      }
+      if (transport) price += transport.price;
     }
 
-    // Add accommodation prices
-    if (selectedAccommodations && accommodations && tripData.accommodations) {
-      tripData.accommodations.forEach(accom => {
-        const accommodationId = selectedAccommodations[accom.id];
+    if (accommodations && tripData.accommodations) {
+      tripData.accommodations.forEach((tripAccom: TripAccommodation) => {
+        const accommodationId = selectedAccommodations[tripAccom.id];
         const accommodation = accommodations.find(a => a.id === accommodationId);
-        if (accommodation) {
-          price += accommodation.price_per_night;
+        if (accommodation && tripAccom.checkIn && tripAccom.checkOut) {
+          const nights = Math.ceil(
+            (new Date(tripAccom.checkOut).getTime() - new Date(tripAccom.checkIn).getTime()) / (1000 * 60 * 60 * 24)
+          );
+          price += accommodation.price_per_night * nights;
         }
       });
     }
@@ -101,7 +114,7 @@ export default function StepTwo() {
   const handleSelectAccommodation = (accommodationId: number, tripAccommodationId: number) => {
     setSelectedAccommodations(prev => ({
       ...prev,
-      [tripAccommodationId]: accommodationId
+      [tripAccommodationId]: accommodationId,
     }));
   };
 
@@ -112,94 +125,135 @@ export default function StepTwo() {
       return;
     }
 
-    if (Object.keys(selectedAccommodations).length < (tripData.accommodations?.length || 0)) {
-      alert("Vui lòng chọn đầy đủ chỗ ở");
+    if (tripData.accommodations && Object.keys(selectedAccommodations).length < tripData.accommodations.length) {
+      alert("Vui lòng chọn đầy đủ chỗ ở cho tất cả các điểm dừng");
       return;
     }
 
     updateTripData({
       selectedTransportation,
       selectedAccommodations,
-      totalPrice
+      totalPrice,
     });
-
     setCurrentStep(3);
   };
+
+  // Initialize selections
+  useEffect(() => {
+    if (transportationOptions && !selectedTransportation) {
+      const recommended = transportationOptions.find(t => t.is_recommended)?.id;
+      if (recommended) setSelectedTransportation(recommended);
+    }
+
+    if (accommodations && tripData.accommodations && Object.keys(selectedAccommodations).length === 0) {
+      const initialAccommodations: { [key: number]: number | null } = {};
+      tripData.accommodations.forEach((tripAccom: TripAccommodation) => {
+        const recommended = accommodations.find(a => a.is_recommended)?.id || accommodations[0]?.id;
+        initialAccommodations[tripAccom.id] = recommended || null;
+      });
+      setSelectedAccommodations(initialAccommodations);
+    }
+  }, [transportationOptions, accommodations, tripData.accommodations]);
 
   if (isLoadingTransport || isLoadingAccommodations) {
     return <div>Đang tải...</div>;
   }
 
+  if (!tripData.originId || !tripData.destinationId) {
+    return <div>Vui lòng chọn điểm đi và điểm đến ở bước trước!</div>;
+  }
+
+  if (!tripData.accommodations || tripData.accommodations.length === 0) {
+    return <div>Chưa có thông tin chỗ ở. Vui lòng thêm chỗ ở ở bước trước!</div>;
+  }
+
   return (
     <div className="space-y-8">
       <div>
-        <h3 className="text-lg font-medium mb-4">Chọn phương tiện di chuyển</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {transportationOptions?.map((option) => (
-            <Card 
-              key={option.id}
-              className={cn(
-                "cursor-pointer transition-all",
-                selectedTransportation === option.id && "ring-2 ring-primary"
-              )}
-              onClick={() => handleSelectTransportation(option.id)}
-            >
-              <CardHeader className="flex flex-row items-center gap-4">
-                <div className="flex-1">
-                  <h4 className="font-medium">{option.provider}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {option.departure_time} - {option.arrival_time}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">{option.price.toLocaleString()}đ</p>
-                  {option.is_recommended && (
-                    <span className="text-sm text-green-600">Recommended</span>
-                  )}
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+        <h3 className="text-lg font-medium mb-4">
+          Chọn phương tiện di chuyển từ {originLocation?.name || "Đang tải..."} đến {destinationLocation?.name || "Đang tải..."}
+        </h3>
+        {transportationOptions?.length === 0 ? (
+          <p>Không có phương tiện nào khả dụng cho hành trình này. Kiểm tra lại originId: {tripData.originId}, destinationId: {tripData.destinationId}</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {transportationOptions.map((option) => (
+              <Card
+                key={option.id}
+                className={cn(
+                  "cursor-pointer transition-all hover:shadow-md",
+                  selectedTransportation === option.id && "ring-2 ring-primary bg-blue-50"
+                )}
+                onClick={() => handleSelectTransportation(option.id)}
+              >
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{option.provider}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {option.departure_time} - {option.arrival_time}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">{option.price.toLocaleString()}đ</p>
+                    {option.is_recommended && (
+                      <span className="text-sm text-green-600">Đề xuất</span>
+                    )}
+                  </div>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
         <h3 className="text-lg font-medium mb-4">Chọn chỗ ở</h3>
-        {tripData.accommodations?.map((tripAccom) => (
+        {tripData.accommodations.map((tripAccom: TripAccommodation) => (
           <div key={tripAccom.id} className="mb-6">
-            <h4 className="font-medium mb-2">Chỗ ở {tripAccom.id}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {accommodations?.map((accom) => (
-                <Card
-                  key={accom.id}
-                  className={cn(
-                    "cursor-pointer transition-all",
-                    selectedAccommodations[tripAccom.id] === accom.id && "ring-2 ring-primary"
-                  )}
-                  onClick={() => handleSelectAccommodation(accom.id, tripAccom.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex gap-4">
-                      <img 
-                        src={accom.image_url || "https://placehold.co/100"} 
-                        alt={accom.name}
-                        className="w-24 h-24 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <h5 className="font-medium">{accom.name}</h5>
-                        <p className="text-sm text-muted-foreground">{accom.address}</p>
-                        <div className="mt-2">
-                          <p className="font-medium">{accom.price_per_night.toLocaleString()}đ/đêm</p>
-                          {accom.is_recommended && (
-                            <span className="text-sm text-green-600">Recommended</span>
-                          )}
+            <h4 className="font-medium mb-2">
+              Chỗ ở {tripAccom.id}
+              {tripAccom.checkIn && tripAccom.checkOut && (
+                <span className="text-sm text-muted-foreground">
+                  {" "}({new Date(tripAccom.checkIn).toLocaleDateString()} - {new Date(tripAccom.checkOut).toLocaleDateString()})
+                </span>
+              )}
+            </h4>
+            {accommodations?.length === 0 ? (
+              <p>Không có chỗ ở nào khả dụng tại điểm đến này. Kiểm tra locationId: {tripData.destinationId}</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {accommodations.map((accom) => (
+                  <Card
+                    key={accom.id}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-md",
+                      selectedAccommodations[tripAccom.id] === accom.id && "ring-2 ring-primary bg-blue-50"
+                    )}
+                    onClick={() => handleSelectAccommodation(accom.id, tripAccom.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        <img
+                          src={accom.image_url || "https://placehold.co/100"}
+                          alt={accom.name}
+                          className="w-24 h-24 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <h5 className="font-medium">{accom.name}</h5>
+                          <p className="text-sm text-muted-foreground">{accom.address}</p>
+                          <div className="mt-2">
+                            <p className="font-medium">{accom.price_per_night.toLocaleString()}đ/đêm</p>
+                            {accom.is_recommended && (
+                              <span className="text-sm text-green-600">Đề xuất</span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -212,7 +266,7 @@ export default function StepTwo() {
         <Button onClick={handleSubmit}>
           Tiếp tục
           <svg className="w-5 h-5 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </Button>
       </div>

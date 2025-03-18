@@ -13,7 +13,7 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
-  // User methods from existing storage
+  // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -117,13 +117,16 @@ export class MemStorage implements IStorage {
   }
 
   private initializeData() {
+    console.log("Initializing data...");
+
     // Add transportation types first
     const plane = this.createTransportationType({ name: "Máy bay", icon: "bxs-plane" });
     const train = this.createTransportationType({ name: "Tàu hỏa", icon: "bxs-train" });
     const bus = this.createTransportationType({ name: "Xe khách", icon: "bxs-bus" });
     const car = this.createTransportationType({ name: "Xe riêng", icon: "bxs-car" });
+    console.log("Transportation types:", Array.from(this.transportationTypes.values()));
 
-    // Then add sample locations
+    // Add sample locations
     const haNoi = this.createLocation({ 
       name: "Hà Nội", 
       type: "origin", 
@@ -172,59 +175,32 @@ export class MemStorage implements IStorage {
       description: "Vịnh Hạ Long kỳ quan thiên nhiên",
       image_url: ""
     });
+    console.log("Locations:", Array.from(this.locations.values()));
 
-    // Add transportation options
-    this.createTransportationOption({
+    // Add a sample user (required for trip)
+    this.createUser({ username: "testuser", password: "password123", email: "test@example.com" });
+
+    // Add a sample trip
+    const sampleTrip = this.createTrip({
+      user_id: 1, // Matches the created user
+      name: "Chuyến đi Phú Quốc",
       origin_id: hoChiMinh.id,
       destination_id: phuQuoc.id,
-      type_id: plane.id,
-      departure_time: "07:00",
-      arrival_time: "08:15",
-      price: 1500000,
-      provider: "Vietnam Airlines",
-      is_recommended: true,
-      price_difference: 0,
-      features: ["Bay thẳng", "Hành lý 20kg"]
+      start_date: "2025-04-01",
+      end_date: "2025-04-05",
+      total_price: 0,
+      status: "planning",
     });
+    console.log("Sample trip:", sampleTrip);
 
-    this.createTransportationOption({
-      origin_id: hoChiMinh.id,
-      destination_id: phuQuoc.id,
-      type_id: plane.id,
-      departure_time: "14:00",
-      arrival_time: "15:15", 
-      price: 1200000,
-      provider: "Vietjet Air",
-      is_recommended: false,
-      price_difference: -300000,
-      features: ["Bay thẳng", "Hành lý 7kg"]
+    // Add sample trip accommodations
+    this.addTripAccommodation({
+      trip_id: sampleTrip.id,
+      checkIn: "2025-04-01",
+      checkOut: "2025-04-05",
+      location: phuQuoc.id, // Changed to number (ID) instead of string
     });
-
-    // Add sample accommodations
-    this.createAccommodation({
-      name: "Vinpearl Resort & Spa Phú Quốc",
-      location_id: phuQuoc.id,
-      address: "Bãi Dài, Gành Dầu, Phú Quốc",
-      type_id: this.createAccommodationType({name: "Khách sạn 5 sao"}).id,
-      rating: 5,
-      price_per_night: 2500000,
-      is_recommended: true,
-      image_url: "https://statics.vinpearl.com/styles/images/2023/04/20/Phoi%20canh%20Vinpearl%20Resort%20Spa%20Phu%20Quoc-14.jpg.webp",
-      features: ["Bể bơi", "Spa", "Nhà hàng", "Bar", "Phòng gym"]
-    });
-
-    this.createAccommodation({
-      name: "InterContinental Phu Quoc Long Beach",
-      location_id: phuQuoc.id,
-      address: "Bãi Trường, Dương Tơ, Phú Quốc",
-      type_id: this.createAccommodationType({name: "Khách sạn 5 sao"}).id,
-      rating: 5,
-      price_per_night: 3000000,
-      is_recommended: false,
-      image_url: "https://cf.bstatic.com/xdata/images/hotel/max1024x768/347812806.jpg?k=c0fff36722d23158cb39f88122d1465f1678fde9d37079eef14d355f59911c10&o=&hp=1",
-      features: ["Bãi biển riêng", "Spa", "Nhà hàng", "Bar"]
-    });
-
+    console.log("Trip accommodations:", Array.from(this.tripAccommodations.values()));
 
     // Add transportation options for HCM -> Phu Quoc
     this.createTransportationOption({
@@ -269,6 +245,7 @@ export class MemStorage implements IStorage {
       features: ["Bay thẳng", "Hạng thương gia", "Hành lý 30kg"]
     });
 
+    // Add transportation options for Hanoi -> Phu Quoc
     this.createTransportationOption({
       type_id: plane.id,
       provider: "Vietjet Air",
@@ -296,6 +273,7 @@ export class MemStorage implements IStorage {
       price_difference: 1200000,
       features: ["Bay thẳng", "Hạng thương gia", "Hành lý 30kg"]
     });
+    console.log("Transportation options:", Array.from(this.transportationOptions.values()));
 
     // Add accommodation types (destinations)
     const hanoi = this.createAccommodationType({ name: "Hà Nội" });
@@ -305,6 +283,7 @@ export class MemStorage implements IStorage {
     const dalat = this.createAccommodationType({ name: "Đà Lạt" });
     const nhatrang = this.createAccommodationType({ name: "Nha Trang" });
     const halong = this.createAccommodationType({ name: "Hạ Long" });
+    console.log("Accommodation types:", Array.from(this.accommodationTypes.values()));
 
     // Add accommodations for Phu Quoc
     this.createAccommodation({
@@ -318,19 +297,6 @@ export class MemStorage implements IStorage {
       price_difference: 0,
       image_url: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
       features: ["Bãi biển", "Hồ bơi", "Spa", "Phòng gia đình"]
-    });
-
-    this.createAccommodation({
-      name: "Novotel Phú Quốc Resort",
-      location_id: phuQuoc.id,
-      address: "Dương Đông, Phú Quốc",
-      type_id: phuquoc.id,
-      rating: 4.7,
-      price_per_night: 1625000,
-      is_recommended: false,
-      price_difference: -375000,
-      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
-      features: ["Bãi biển", "Hồ bơi", "Quầy bar"]
     });
 
     this.createAccommodation({
@@ -367,10 +333,11 @@ export class MemStorage implements IStorage {
       rating: 4.7,
       price_per_night: 1625000,
       is_recommended: false,
-      price_difference: -1500000,
+      price_difference: -375000,
       image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
       features: ["Bãi biển", "Hồ bơi", "Quầy bar"]
     });
+    console.log("Accommodations:", Array.from(this.accommodations.values()));
 
     // Add attractions
     this.createAttraction({
@@ -402,6 +369,7 @@ export class MemStorage implements IStorage {
       image_url: "",
       is_recommended: false
     });
+    console.log("Attractions:", Array.from(this.attractions.values()));
   }
 
   // User methods
@@ -445,8 +413,10 @@ export class MemStorage implements IStorage {
   }
 
   async getTransportationOptions(originId: number, destinationId: number): Promise<TransportationOption[]> {
-    return Array.from(this.transportationOptions.values())
+    const options = Array.from(this.transportationOptions.values())
       .filter(option => option.origin_id === originId && option.destination_id === destinationId);
+    console.log(`Transportation options for originId=${originId}, destinationId=${destinationId}:`, options);
+    return options;
   }
 
   async getTransportationOption(id: number): Promise<TransportationOption | undefined> {
@@ -473,8 +443,10 @@ export class MemStorage implements IStorage {
   }
 
   async getAccommodations(locationId: number): Promise<Accommodation[]> {
-    return Array.from(this.accommodations.values())
+    const accoms = Array.from(this.accommodations.values())
       .filter(accom => accom.location_id === locationId);
+    console.log(`Accommodations for locationId=${locationId}:`, accoms);
+    return accoms;
   }
 
   async getAccommodation(id: number): Promise<Accommodation | undefined> {
@@ -548,6 +520,7 @@ export class MemStorage implements IStorage {
     const id = this.tripAccommodationCurrentId++;
     const newTripAccommodation = { ...tripAccommodation, id };
     this.tripAccommodations.set(id, newTripAccommodation);
+    console.log("Added trip accommodation:", newTripAccommodation);
     return newTripAccommodation;
   }
 
