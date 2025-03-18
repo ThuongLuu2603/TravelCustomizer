@@ -71,6 +71,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseInt(originId as string),
         parseInt(destinationId as string)
       );
+
+      if (!options || options.length === 0) {
+        return res.status(404).json({ message: "Không tìm thấy phương tiện di chuyển nào phù hợp." });
+      }
+
       res.json(options);
     } catch (err) {
       handleErrors(err, res);
@@ -96,6 +101,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const accommodations = await storage.getAccommodations(parseInt(locationId as string));
+
+      if (!accommodations || accommodations.length === 0) {
+        return res.status(404).json({ message: "Không tìm thấy thông tin chỗ ở nào phù hợp." });
+      }
+
       res.json(accommodations);
     } catch (err) {
       handleErrors(err, res);
@@ -117,12 +127,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all trips
+  apiRouter.get("/trips", async (req: Request, res: Response) => {
+    try {
+      const { userId, startDate, endDate, originId, destinationId } = req.query;
+      let trips = await storage.getTrips(userId ? parseInt(userId as string) : undefined);
+
+      // Lọc theo ngày nếu có
+      if (startDate && endDate) {
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        trips = trips.filter(trip => {
+          const tripStart = new Date(trip.start_date);
+          const tripEnd = new Date(trip.end_date);
+          return tripStart >= start && tripEnd <= end;
+        });
+      }
+
+      // Lọc theo originId và destinationId nếu có
+      if (originId && destinationId) {
+        trips = trips.filter(trip =>
+          trip.origin_id === parseInt(originId as string) &&
+          trip.destination_id === parseInt(destinationId as string)
+        );
+      }
+
+      if (trips.length === 0) {
+        return res.status(404).json({ message: "Không tìm thấy thông tin chuyến đi phù hợp trong dữ liệu hiện tại." });
+      }
+
+      res.json(trips);
+    } catch (err) {
+      handleErrors(err, res);
+    }
+  });
+
   // Create a trip
   apiRouter.post("/trips", async (req: Request, res: Response) => {
     try {
-      const tripData = insertTripSchema.parse(req.body);
-      const trip = await storage.createTrip(tripData);
-      res.status(201).json(trip);
+      console.log("Received trip payload:", req.body); // Thêm log để kiểm tra dữ liệu gửi lên
+      const { trip, accommodations } = req.body;
+      const tripData = insertTripSchema.parse(trip);
+      const accommodationsData = (accommodations || []).map((a: any) =>
+        insertTripAccommodationSchema.parse({
+          trip_id: 0, // Sẽ được cập nhật sau khi tạo trip
+          checkIn: a.checkIn,
+          checkOut: a.checkOut,
+          location: a.location,
+        })
+      );
+
+      // Tạo trip
+      const newTrip = await storage.createTrip(tripData);
+      console.log("Created trip:", newTrip);
+
+      // Tạo trip accommodations với trip_id mới
+      for (const accom of accommodationsData) {
+        const accomData = { ...accom, trip_id: newTrip.id };
+        await storage.addTripAccommodation(accomData);
+      }
+
+      res.status(201).json(newTrip);
     } catch (err) {
       handleErrors(err, res);
     }

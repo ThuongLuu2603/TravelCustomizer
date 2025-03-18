@@ -133,14 +133,21 @@ export const trips = pgTable("trips", {
   transportation_type_id: integer("transportation_type_id"), // Reference to transportationTypes
   start_date: date("start_date").notNull(),
   end_date: date("end_date").notNull(),
-  adults: integer("adults").notNull(),
-  children: integer("children").notNull(),
+  adults: integer("adults"),
+  children: integer("children"),
   total_price: numeric("total_price"),
   status: text("status").default("draft"), // 'draft', 'confirmed', 'completed', 'cancelled'
   created_at: timestamp("created_at").defaultNow(),
 });
 
-export const insertTripSchema = createInsertSchema(trips).omit({
+// Tùy chỉnh insertTripSchema để chấp nhận total_price là number và chuyển thành string
+export const insertTripSchema = createInsertSchema(trips, {
+  total_price: z.number().transform((val) => val.toString()), // Chuyển number thành string
+  adults: z.number().optional(), // Đảm bảo optional
+  children: z.number().optional(), // Đảm bảo optional
+  transportation_type_id: z.number().optional(), // Đảm bảo optional
+  user_id: z.number().optional(), // Đảm bảo optional nếu không có user
+}).omit({
   id: true,
   created_at: true,
 });
@@ -158,7 +165,10 @@ export const tripAccommodations = pgTable("trip_accommodations", {
   check_out_date: date("check_out_date").notNull(),
 });
 
-export const insertTripAccommodationSchema = createInsertSchema(tripAccommodations).omit({
+export const insertTripAccommodationSchema = createInsertSchema(tripAccommodations, {
+  location: z.number().transform((val) => val.toString()), // Chuyển number thành string
+  accommodation_id: z.number().optional(), // Đảm bảo optional vì StepOne không gửi
+}).omit({
   id: true,
 });
 

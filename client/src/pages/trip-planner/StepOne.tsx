@@ -15,10 +15,10 @@ import { addDays, differenceInDays } from "date-fns";
 
 interface Accommodation {
   id: number;
-  trip_id: number; // Thêm trường này để khớp với MemStorage
-  checkIn: string | undefined; // Sử dụng string thay vì Date
-  checkOut: string | undefined; // Sử dụng string thay vì Date
-  location: number | undefined; // Sử dụng ID thay vì chuỗi tên
+  trip_id: number;
+  checkIn: Date | undefined;
+  checkOut: Date | undefined;
+  location: number | undefined;
 }
 
 export default function StepOne() {
@@ -52,9 +52,9 @@ export default function StepOne() {
   const [accommodations, setAccommodations] = useState<Accommodation[]>(
     tripData.accommodations?.map((a: any) => ({
       id: a.id,
-      trip_id: a.trip_id || 1, // Giả sử trip_id mặc định là 1
-      checkIn: a.checkIn,
-      checkOut: a.checkOut,
+      trip_id: a.trip_id || 1,
+      checkIn: a.checkIn ? new Date(a.checkIn) : undefined,
+      checkOut: a.checkOut ? new Date(a.checkOut) : undefined,
       location: a.location,
     })) || [
       {
@@ -108,7 +108,9 @@ export default function StepOne() {
   // Update accommodation field
   const updateAccommodation = (id: number, field: string, value: any) => {
     setAccommodations(
-      accommodations.map((a) => (a.id === id ? { ...a, [field]: value } : a)),
+      accommodations.map((a) =>
+        a.id === id ? { ...a, [field]: value } : a,
+      ),
     );
   };
 
@@ -206,7 +208,7 @@ export default function StepOne() {
         return false;
       }
 
-      if (new Date(accom.checkIn) < departureDate) {
+      if (accom.checkIn < departureDate) {
         toast({
           title: "Lỗi",
           description: "Ngày nhận phòng không thể trước ngày đi",
@@ -215,7 +217,7 @@ export default function StepOne() {
         return false;
       }
 
-      if (new Date(accom.checkOut) > returnDate) {
+      if (accom.checkOut > returnDate) {
         toast({
           title: "Lỗi",
           description: "Ngày trả phòng không thể sau ngày về",
@@ -231,49 +233,77 @@ export default function StepOne() {
   // Handle form submission
   const handleSubmit = async () => {
     if (validateForm()) {
-      // Chuyển Date thành chuỗi ISO trước khi gửi
+      const formatDate = (date: Date | undefined) =>
+        date ? date.toLocaleDateString("en-CA") : undefined;
+
+      // Giả sử bạn đã fetch locations và lưu vào state
+      const originLocation = locations.find(loc => loc.id === parseInt(origin));
+      const destinationLocation = locations.find(loc => loc.id === parseInt(destination));
+      const originName = originLocation ? originLocation.name : origin;
+      const destinationName = destinationLocation ? destinationLocation.name : destination;
+
       const formattedAccommodations = accommodations.map((accom) => ({
         ...accom,
-        checkIn: accom.checkIn
-          ? new Date(accom.checkIn).toISOString().split("T")[0]
-          : undefined,
-        checkOut: accom.checkOut
-          ? new Date(accom.checkOut).toISOString().split("T")[0]
-          : undefined,
+        checkIn: accom.checkIn ? formatDate(accom.checkIn) : undefined,
+        checkOut: accom.checkOut ? formatDate(accom.checkOut) : undefined,
       }));
 
-      // Debug: Log dữ liệu trước khi gửi
-      console.log("Submitting tripData:", {
-        originId: parseInt(origin),
-        destinationId: parseInt(destination),
-        transportationTypeId: parseInt(transportationType),
-        adults: parseInt(adults),
-        children: parseInt(children),
-        startDate: departureDate
-          ? departureDate.toISOString().split("T")[0]
-          : undefined,
-        endDate: returnDate
-          ? returnDate.toISOString().split("T")[0]
-          : undefined,
-        accommodations: formattedAccommodations,
-      });
+      const tripPayload = {
+        trip: {
+          user_id: 1,
+          name: `Chuyến đi từ ${originName} đến ${destinationName}`, // Sửa tên chuyến đi
+          origin_id: parseInt(origin),
+          destination_id: parseInt(destination),
+          start_date: departureDate ? formatDate(departureDate) : undefined,
+          end_date: returnDate ? formatDate(returnDate) : undefined,
+          total_price: 0,
+          status: "planning",
+          adults: parseInt(adults || "0"),
+          children: parseInt(children || "0"),
+        },
+        accommodations: formattedAccommodations.map((accom) => ({
+          checkIn: accom.checkIn,
+          checkOut: accom.checkOut,
+          location: parseInt(accom.location), // Đảm bảo location là number
+        })),
+      };
 
-      updateTripData({
-        originId: parseInt(origin),
-        destinationId: parseInt(destination),
-        transportationTypeId: parseInt(transportationType),
-        adults: parseInt(adults),
-        children: parseInt(children),
-        startDate: departureDate
-          ? departureDate.toISOString().split("T")[0]
-          : undefined,
-        endDate: returnDate
-          ? returnDate.toISOString().split("T")[0]
-          : undefined,
-        accommodations: formattedAccommodations,
-      });
+      try {
+        const response = await fetch("/api/trips", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tripPayload),
+        });
 
-      setCurrentStep(2);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Không thể tạo chuyến đi.");
+        }
+
+        const createdTrip = await response.json();
+        console.log("Created trip:", createdTrip);
+
+        updateTripData({
+          tripId: createdTrip.id,
+          originId: parseInt(origin),
+          destinationId: parseInt(destination),
+          transportationTypeId: parseInt(transportationType),
+          adults: parseInt(adults || "0"),
+          children: parseInt(children || "0"),
+          startDate: departureDate ? formatDate(departureDate) : undefined,
+          endDate: returnDate ? formatDate(returnDate) : undefined,
+          accommodations: formattedAccommodations,
+        });
+
+        setCurrentStep(2);
+      } catch (error) {
+        console.error("Error creating trip:", error);
+        toast({
+          title: "Lỗi",
+          description: error.message || "Không thể tạo chuyến đi. Vui lòng thử lại.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -295,15 +325,12 @@ export default function StepOne() {
     if (departureDate && accommodations.length > 0) {
       const updatedAccommodations = accommodations.map((accom, index) => {
         if (!accom.checkIn) {
-          const checkIn =
-            index === 0 ? departureDate.toISOString().split("T")[0] : undefined;
+          const checkIn = index === 0 ? new Date(departureDate) : undefined;
           return { ...accom, checkIn };
         }
         return accom;
       });
-      if (
-        JSON.stringify(updatedAccommodations) !== JSON.stringify(accommodations)
-      ) {
+      if (JSON.stringify(updatedAccommodations) !== JSON.stringify(accommodations)) {
         setAccommodations(updatedAccommodations);
       }
     }
@@ -312,17 +339,12 @@ export default function StepOne() {
     if (returnDate && accommodations.length > 0) {
       const updatedAccommodations = accommodations.map((accom, index, arr) => {
         if (!accom.checkOut) {
-          const checkOut =
-            index === arr.length - 1
-              ? returnDate.toISOString().split("T")[0]
-              : undefined;
+          const checkOut = index === arr.length - 1 ? new Date(returnDate) : undefined;
           return { ...accom, checkOut };
         }
         return accom;
       });
-      if (
-        JSON.stringify(updatedAccommodations) !== JSON.stringify(accommodations)
-      ) {
+      if (JSON.stringify(updatedAccommodations) !== JSON.stringify(accommodations)) {
         setAccommodations(updatedAccommodations);
       }
     }
@@ -664,16 +686,12 @@ export default function StepOne() {
                 </div>
                 <div>
                   <DatePicker
-                    date={
-                      accommodation.checkIn
-                        ? new Date(accommodation.checkIn)
-                        : undefined
-                    }
+                    date={accommodation.checkIn}
                     setDate={(date) =>
                       updateAccommodation(
                         accommodation.id,
                         "checkIn",
-                        date ? date.toISOString().split("T")[0] : undefined,
+                        date,
                       )
                     }
                     label="Ngày nhận phòng"
@@ -699,16 +717,12 @@ export default function StepOne() {
                 </div>
                 <div>
                   <DatePicker
-                    date={
-                      accommodation.checkOut
-                        ? new Date(accommodation.checkOut)
-                        : undefined
-                    }
+                    date={accommodation.checkOut}
                     setDate={(date) =>
                       updateAccommodation(
                         accommodation.id,
                         "checkOut",
-                        date ? date.toISOString().split("T")[0] : undefined,
+                        date,
                       )
                     }
                     label="Ngày trả phòng"
@@ -729,7 +743,7 @@ export default function StepOne() {
                       </svg>
                     }
                     minDate={departureDate}
-                    maxDate={returnDate ? addDays(returnDate, -1) : undefined}
+                    maxDate={returnDate} // Sửa lại để cho phép check-out bằng returnDate
                   />
                 </div>
               </div>

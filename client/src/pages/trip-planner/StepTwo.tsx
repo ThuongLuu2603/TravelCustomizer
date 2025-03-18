@@ -63,15 +63,15 @@ export default function StepTwo() {
   });
 
   // Get transportation options
-  const { data: transportationOptions, isLoading: isLoadingTransport } = useQuery<TransportationOption[]>({
-    queryKey: [`/api/transportation-options?originId=${tripData.originId}&destinationId=${tripData.destinationId}`],
-    enabled: !!(tripData.originId && tripData.destinationId),
+  const { data: transportationOptions, isLoading: isLoadingTransport, error: transportError } = useQuery<TransportationOption[]>({
+    queryKey: [`/api/transportation-options?originId=${tripData.originId}&destinationId=${tripData.destinationId}&startDate=${tripData.startDate}`],
+    enabled: !!(tripData.originId && tripData.destinationId && tripData.startDate),
   });
 
   // Get accommodations
-  const { data: accommodations, isLoading: isLoadingAccommodations } = useQuery<Accommodation[]>({
-    queryKey: [`/api/accommodations?locationId=${tripData.destinationId}`],
-    enabled: !!tripData.destinationId,
+  const { data: accommodations, isLoading: isLoadingAccommodations, error: accommodationError } = useQuery<Accommodation[]>({
+    queryKey: [`/api/accommodations?locationId=${tripData.destinationId}&checkIn=${tripData.accommodations?.[0]?.checkIn}`],
+    enabled: !!(tripData.destinationId && tripData.accommodations?.[0]?.checkIn),
   });
 
   // Debug: Log dữ liệu
@@ -79,7 +79,9 @@ export default function StepTwo() {
     console.log("tripData:", tripData);
     console.log("transportationOptions:", transportationOptions);
     console.log("accommodations:", accommodations);
-  }, [tripData, transportationOptions, accommodations]);
+    console.log("transportError:", transportError);
+    console.log("accommodationError:", accommodationError);
+  }, [tripData, transportationOptions, accommodations, transportError, accommodationError]);
 
   // Calculate total price
   useEffect(() => {
@@ -159,6 +161,24 @@ export default function StepTwo() {
     return <div>Đang tải...</div>;
   }
 
+  if (transportError) {
+    return (
+      <div>
+        Lỗi khi tải phương tiện di chuyển: {(transportError as any).message || "Không thể lấy dữ liệu."}
+        <p>Kiểm tra originId: {tripData.originId}, destinationId: {tripData.destinationId}, startDate: {tripData.startDate}</p>
+      </div>
+    );
+  }
+
+  if (accommodationError) {
+    return (
+      <div>
+        Lỗi khi tải chỗ ở: {(accommodationError as any).message || "Không thể lấy dữ liệu."}
+        <p>Kiểm tra locationId: {tripData.destinationId}, checkIn: {tripData.accommodations?.[0]?.checkIn}</p>
+      </div>
+    );
+  }
+
   if (!tripData.originId || !tripData.destinationId) {
     return <div>Vui lòng chọn điểm đi và điểm đến ở bước trước!</div>;
   }
@@ -173,8 +193,8 @@ export default function StepTwo() {
         <h3 className="text-lg font-medium mb-4">
           Chọn phương tiện di chuyển từ {originLocation?.name || "Đang tải..."} đến {destinationLocation?.name || "Đang tải..."}
         </h3>
-        {transportationOptions?.length === 0 ? (
-          <p>Không có phương tiện nào khả dụng cho hành trình này. Kiểm tra lại originId: {tripData.originId}, destinationId: {tripData.destinationId}</p>
+        {!transportationOptions || transportationOptions.length === 0 ? (
+          <p>Không có phương tiện nào khả dụng cho hành trình này. Kiểm tra originId: {tripData.originId}, destinationId: {tripData.destinationId}, startDate: {tripData.startDate}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {transportationOptions.map((option) => (
@@ -218,8 +238,8 @@ export default function StepTwo() {
                 </span>
               )}
             </h4>
-            {accommodations?.length === 0 ? (
-              <p>Không có chỗ ở nào khả dụng tại điểm đến này. Kiểm tra locationId: {tripData.destinationId}</p>
+            {!accommodations || accommodations.length === 0 ? (
+              <p>Không có chỗ ở nào khả dụng tại điểm đến này. Kiểm tra locationId: {tripData.destinationId}, checkIn: {tripData.accommodations?.[0]?.checkIn}</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {accommodations.map((accom) => (
