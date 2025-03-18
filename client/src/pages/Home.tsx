@@ -9,7 +9,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-10 md:mb-0">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Thiết kế chuyến đi trong mơ của bạn</h1>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">MakeYourTrip - Thiết kế chuyến đi trong mơ của bạn</h1>
               <p className="text-lg md:text-xl mb-8">
                 Khám phá tự do với lịch trình du lịch được cá nhân hóa hoàn toàn. Bạn chọn điểm đến, chúng tôi lo phần còn lại.
               </p>
