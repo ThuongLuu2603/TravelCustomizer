@@ -117,7 +117,13 @@ export class MemStorage implements IStorage {
   }
 
   private initializeData() {
-    // Add sample locations
+    // Add transportation types first
+    const plane = this.createTransportationType({ name: "Máy bay", icon: "bxs-plane" });
+    const train = this.createTransportationType({ name: "Tàu hỏa", icon: "bxs-train" });
+    const bus = this.createTransportationType({ name: "Xe khách", icon: "bxs-bus" });
+    const car = this.createTransportationType({ name: "Xe riêng", icon: "bxs-car" });
+
+    // Then add sample locations
     const haNoi = this.createLocation({ 
       name: "Hà Nội", 
       type: "origin", 
@@ -196,11 +202,7 @@ export class MemStorage implements IStorage {
       image_url: ""
     });
 
-    // Add transportation types
-    const plane = this.createTransportationType({ name: "Máy bay", icon: "bxs-plane" });
-    const train = this.createTransportationType({ name: "Tàu hỏa", icon: "bxs-train" });
-    const bus = this.createTransportationType({ name: "Xe khách", icon: "bxs-bus" });
-    const car = this.createTransportationType({ name: "Xe riêng", icon: "bxs-car" });
+    // Transportation types already initialized above
 
     // Add transportation options for HCM -> Phu Quoc
     this.createTransportationOption({
