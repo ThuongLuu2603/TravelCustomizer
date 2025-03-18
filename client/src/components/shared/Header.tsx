@@ -14,7 +14,7 @@ export default function Header() {
             <path d="M5.64 12C7.29 12 8.78 10.66 8.94 9.01L9.16 6.8L9.64 2H6.59C3.97 2 2.97 3 2.61 5.6L2.34 8.35C2.14 10.36 3.62 12 5.64 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M12 17C10.33 17 9.5 17.83 9.5 19.5V22H14.5V19.5C14.5 17.83 13.67 17 12 17Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <h1 className="font-bold text-2xl ml-2 text-primary">TravelJourney</h1>
+          <h1 className="font-bold text-2xl ml-2 text-primary">MakeYourTrip</h1>
         </div>
         <nav className="hidden md:flex items-center space-x-6">
           <Link href="/" className={`${location === '/' ? 'text-primary' : 'text-neutral-600 hover:text-primary'} transition`}>

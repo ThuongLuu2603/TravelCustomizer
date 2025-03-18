@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { useTripContext } from "@/lib/trip-context";
-import { addDays, differenceInDays } from "date-fns";
+import { addDays, differenceInDays, startOfDay } from "date-fns";
 
 interface Accommodation {
   id: number;
@@ -69,19 +69,25 @@ export default function StepOne() {
 
   // Fetch data using useQuery
   const {
-    data: origins = [], // Default to empty array if data is undefined
+    data: origins = [],
+    isLoading: originsLoading,
+    error: originsError,
   } = useQuery({
     queryKey: ["/api/locations?type=origin"],
   });
 
   const {
-    data: destinations = [], // Default to empty array if data is undefined
+    data: destinations = [],
+    isLoading: destinationsLoading,
+    error: destinationsError,
   } = useQuery({
     queryKey: ["/api/locations?type=destination"],
   });
 
   const {
-    data: transportationTypes = [], // Default to empty array if data is undefined
+    data: transportationTypes = [],
+    isLoading: transportationTypesLoading,
+    error: transportationTypesError,
   } = useQuery({
     queryKey: ["/api/transportation-types"],
   });
@@ -114,9 +120,25 @@ export default function StepOne() {
   const updateAccommodation = (id: number, field: string, value: any) => {
     setAccommodations(
       accommodations.map((a) =>
-        a.id === id ? { ...a, [field]: value instanceof Date ? value : undefined } : a
+        a.id === id
+          ? {
+              ...a,
+              [field]:
+                field === "location"
+                  ? parseInt(value)
+                  : value
+                  ? startOfDay(value)
+                  : undefined,
+            }
+          : a
       )
     );
+  };
+
+  // Hàm chuẩn hóa ngày để chỉ so sánh ngày, không so sánh giờ
+  const normalizeDate = (date: Date | undefined): Date | undefined => {
+    if (!date) return undefined;
+    return startOfDay(date);
   };
 
   // Validate form
@@ -166,7 +188,7 @@ export default function StepOne() {
       return false;
     }
 
-    if (returnDate <= departureDate) {
+    if (normalizeDate(returnDate)! <= normalizeDate(departureDate)!) {
       toast({
         title: "Lỗi",
         description: "Ngày về phải sau ngày đi",
@@ -186,9 +208,8 @@ export default function StepOne() {
         return false;
       }
 
-      // Đảm bảo checkIn và checkOut không undefined, sử dụng giá trị mặc định nếu cần
-      const effectiveCheckIn = accom.checkIn || departureDate;
-      const effectiveCheckOut = accom.checkOut || returnDate;
+      const effectiveCheckIn = normalizeDate(accom.checkIn || departureDate);
+      const effectiveCheckOut = normalizeDate(accom.checkOut || returnDate);
 
       if (!effectiveCheckIn) {
         toast({
@@ -217,7 +238,7 @@ export default function StepOne() {
         return false;
       }
 
-      if (effectiveCheckIn < departureDate) {
+      if (effectiveCheckIn < normalizeDate(departureDate)) {
         toast({
           title: "Lỗi",
           description: "Ngày nhận phòng không thể trước ngày đi",
@@ -226,7 +247,7 @@ export default function StepOne() {
         return false;
       }
 
-      if (effectiveCheckOut > returnDate) {
+      if (effectiveCheckOut > normalizeDate(returnDate)) {
         toast({
           title: "Lỗi",
           description: "Ngày trả phòng không thể sau ngày về",
@@ -242,25 +263,29 @@ export default function StepOne() {
   // Handle form submission
   const handleSubmit = async () => {
     if (validateForm()) {
-      const formatDate = (date: Date | undefined) =>
-        date ? date.toLocaleDateString("en-CA") : undefined;
+      const formatDate = (date: Date) => date.toLocaleDateString("en-CA");
 
-      // Sử dụng origins và destinations
-      const originLocation = origins.find((loc: any) => loc.id === parseInt(origin));
-      const destinationLocation = destinations.find((loc: any) => loc.id === parseInt(destination));
+      const originLocation = origins.find(
+        (loc: any) => loc.id === parseInt(origin)
+      );
+      const destinationLocation = destinations.find(
+        (loc: any) => loc.id === parseInt(destination)
+      );
       const originName = originLocation ? originLocation.name : origin;
-      const destinationName = destinationLocation ? destinationLocation.name : destination;
+      const destinationName = destinationLocation
+        ? destinationLocation.name
+        : destination;
 
-      // Đảm bảo checkIn và checkOut không undefined
-      const formattedAccommodations = accommodations.map((accom) => ({
-        ...accom,
-        checkIn: accom.checkIn || departureDate, // Sử dụng departureDate làm giá trị mặc định
-        checkOut: accom.checkOut || returnDate, // Sử dụng returnDate làm giá trị mặc định
-      })).map((accom) => ({
-        ...accom,
-        checkIn: formatDate(accom.checkIn),
-        checkOut: formatDate(accom.checkOut),
-      }));
+      // Đảm bảo checkIn và checkOut không bao giờ là undefined
+      const formattedAccommodations = accommodations.map((accom) => {
+        const checkIn = accom.checkIn || departureDate!;
+        const checkOut = accom.checkOut || returnDate!;
+        return {
+          ...accom,
+          checkIn: formatDate(checkIn),
+          checkOut: formatDate(checkOut),
+        };
+      });
 
       const tripPayload = {
         trip: {
@@ -276,11 +301,14 @@ export default function StepOne() {
           children: parseInt(children || "0"),
         },
         accommodations: formattedAccommodations.map((accom) => ({
+          // Sửa key thành check_in_date và check_out_date theo định dạng backend yêu cầu
           checkIn: accom.checkIn,
           checkOut: accom.checkOut,
           location: parseInt(accom.location?.toString() || "0"),
         })),
       };
+
+      console.log("Trip payload:", tripPayload); // Debug payload trước khi gửi
 
       try {
         const response = await fetch("/api/trips", {
@@ -310,7 +338,7 @@ export default function StepOne() {
         });
 
         setCurrentStep(2);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error creating trip:", error);
         toast({
           title: "Lỗi",
@@ -326,13 +354,13 @@ export default function StepOne() {
     if (!departureDate) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      setDepartureDate(tomorrow);
+      setDepartureDate(startOfDay(tomorrow));
     }
 
     if (departureDate && !returnDate) {
       const defaultReturnDate = new Date(departureDate);
       defaultReturnDate.setDate(defaultReturnDate.getDate() + 5);
-      setReturnDate(defaultReturnDate);
+      setReturnDate(startOfDay(defaultReturnDate));
     }
 
     // Cập nhật checkIn và checkOut cho accommodations
@@ -340,10 +368,10 @@ export default function StepOne() {
       const updatedAccommodations = accommodations.map((accom, index, arr) => {
         const newAccom = { ...accom };
         if (!newAccom.checkIn && index === 0) {
-          newAccom.checkIn = new Date(departureDate);
+          newAccom.checkIn = startOfDay(new Date(departureDate));
         }
         if (!newAccom.checkOut && index === arr.length - 1) {
-          newAccom.checkOut = new Date(returnDate);
+          newAccom.checkOut = startOfDay(new Date(returnDate));
         }
         return newAccom;
       });
@@ -392,14 +420,28 @@ export default function StepOne() {
                   <SelectValue placeholder="Chọn điểm xuất phát" />
                 </SelectTrigger>
                 <SelectContent>
-                  {origins.map((location: any) => (
-                    <SelectItem
-                      key={location.id}
-                      value={location.id.toString()}
-                    >
-                      {location.name}
+                  {originsLoading ? (
+                    <SelectItem value="loading" disabled>
+                      Đang tải...
                     </SelectItem>
-                  ))}
+                  ) : originsError ? (
+                    <SelectItem value="error" disabled>
+                      Lỗi tải dữ liệu
+                    </SelectItem>
+                  ) : origins.length === 0 ? (
+                    <SelectItem value="no-data" disabled>
+                      Không có dữ liệu
+                    </SelectItem>
+                  ) : (
+                    origins.map((location: any) => (
+                      <SelectItem
+                        key={location.id}
+                        value={location.id.toString()}
+                      >
+                        {location.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -434,14 +476,28 @@ export default function StepOne() {
                   <SelectValue placeholder="Chọn điểm đến" />
                 </SelectTrigger>
                 <SelectContent>
-                  {destinations.map((location: any) => (
-                    <SelectItem
-                      key={location.id}
-                      value={location.id.toString()}
-                    >
-                      {location.name}
+                  {destinationsLoading ? (
+                    <SelectItem value="loading" disabled>
+                      Đang tải...
                     </SelectItem>
-                  ))}
+                  ) : destinationsError ? (
+                    <SelectItem value="error" disabled>
+                      Lỗi tải dữ liệu
+                    </SelectItem>
+                  ) : destinations.length === 0 ? (
+                    <SelectItem value="no-data" disabled>
+                      Không có dữ liệu
+                    </SelectItem>
+                  ) : (
+                    destinations.map((location: any) => (
+                      <SelectItem
+                        key={location.id}
+                        value={location.id.toString()}
+                      >
+                        {location.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -476,11 +532,25 @@ export default function StepOne() {
                 <SelectValue placeholder="Chọn phương tiện" />
               </SelectTrigger>
               <SelectContent>
-                {transportationTypes.map((type: any) => (
-                  <SelectItem key={type.id} value={type.id.toString()}>
-                    {type.name}
+                {transportationTypesLoading ? (
+                  <SelectItem value="loading" disabled>
+                    Đang tải...
                   </SelectItem>
-                ))}
+                ) : transportationTypesError ? (
+                  <SelectItem value="error" disabled>
+                    Lỗi tải dữ liệu
+                  </SelectItem>
+                ) : transportationTypes.length === 0 ? (
+                  <SelectItem value="no-data" disabled>
+                    Không có dữ liệu
+                  </SelectItem>
+                ) : (
+                  transportationTypes.map((type: any) => (
+                    <SelectItem key={type.id} value={type.id.toString()}>
+                      {type.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -554,7 +624,9 @@ export default function StepOne() {
           <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
             <DatePicker
               date={departureDate}
-              setDate={setDepartureDate}
+              setDate={(date) =>
+                setDepartureDate(date ? startOfDay(date) : undefined)
+              }
               label="Ngày đi"
               placeholder="Chọn ngày đi"
               icon={
@@ -576,7 +648,9 @@ export default function StepOne() {
             />
             <DatePicker
               date={returnDate}
-              setDate={setReturnDate}
+              setDate={(date) =>
+                setReturnDate(date ? startOfDay(date) : undefined)
+              }
               label="Ngày về"
               placeholder="Chọn ngày về"
               icon={
@@ -674,14 +748,28 @@ export default function StepOne() {
                       <SelectValue placeholder="Chọn Địa Điểm Lưu Trú" />
                     </SelectTrigger>
                     <SelectContent>
-                      {destinations.map((location: any) => (
-                        <SelectItem
-                          key={location.id}
-                          value={location.id.toString()}
-                        >
-                          {location.name}
+                      {destinationsLoading ? (
+                        <SelectItem value="loading" disabled>
+                          Đang tải...
                         </SelectItem>
-                      ))}
+                      ) : destinationsError ? (
+                        <SelectItem value="error" disabled>
+                          Lỗi tải dữ liệu
+                        </SelectItem>
+                      ) : destinations.length === 0 ? (
+                        <SelectItem value="no-data" disabled>
+                          Không có dữ liệu
+                        </SelectItem>
+                      ) : (
+                        destinations.map((location: any) => (
+                          <SelectItem
+                            key={location.id}
+                            value={location.id.toString()}
+                          >
+                            {location.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -692,7 +780,7 @@ export default function StepOne() {
                       updateAccommodation(
                         accommodation.id,
                         "checkIn",
-                        date
+                        date ? startOfDay(date) : undefined
                       )
                     }
                     label="Ngày nhận phòng"
@@ -723,7 +811,7 @@ export default function StepOne() {
                       updateAccommodation(
                         accommodation.id,
                         "checkOut",
-                        date
+                        date ? startOfDay(date) : undefined
                       )
                     }
                     label="Ngày trả phòng"

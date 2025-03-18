@@ -161,8 +161,8 @@ export const tripAccommodations = pgTable("trip_accommodations", {
   trip_id: integer("trip_id").notNull(), // Reference to trips
   accommodation_id: integer("accommodation_id").notNull(), // Reference to accommodations
   location: text("location").notNull(),
-  check_in_date: date("check_in_date").notNull(),
-  check_out_date: date("check_out_date").notNull(),
+  checkin: date("checkIn").notNull(),
+  checkout: date("checkOut").notNull(),
 });
 
 export const insertTripAccommodationSchema = createInsertSchema(tripAccommodations, {
