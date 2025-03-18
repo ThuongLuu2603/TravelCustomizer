@@ -226,37 +226,6 @@ export class MemStorage implements IStorage {
     });
 
 
-    //Add transportation options for HCM -> Phu Quoc - existing code remains
-    this.createTransportationOption({
-      type_id: plane.id,
-      provider: "Vietnam Airlines",
-      origin_id: hoChiMinh.id,
-      destination_id: phuQuoc.id,
-      departure_time: "08:00",
-      arrival_time: "09:15", 
-      duration: "1h 15m",
-      price: 1500000,
-      is_recommended: true,
-      price_difference: 0,
-      features: ["Bay thẳng", "Hành lý 20kg"]
-    });
-
-    this.createTransportationOption({
-      type_id: plane.id,
-      provider: "Vietjet Air", 
-      origin_id: hoChiMinh.id,
-      destination_id: phuQuoc.id,
-      departure_time: "10:30",
-      arrival_time: "11:45",
-      duration: "1h 15m", 
-      price: 990000,
-      is_recommended: false,
-      price_difference: -510000,
-      features: ["Bay thẳng", "Hành lý 7kg"]
-    });
-
-    // Transportation types already initialized above
-
     // Add transportation options for HCM -> Phu Quoc
     this.createTransportationOption({
       type_id: plane.id,
