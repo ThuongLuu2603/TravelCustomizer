@@ -121,17 +121,42 @@ export default function StepTwo() {
     enabled: !!(tripData.origin_id && tripData.destination_id && tripData.start_date),
   });
 
-  // Lấy danh sách chỗ ở
-  const {
-    data: accommodations,
-    isLoading: isLoadingAccommodations,
-    error: accommodationError,
-  } = useQuery<Accommodation[]>({
-    queryKey: [
-      `/api/accommodations?locationId=${tripData.destination_id}&checkIn=${tripData.accommodations?.[0]?.checkIn}`
-    ],
-    enabled: !!(tripData.destination_id && tripData.accommodations?.[0]?.checkIn),
-  });
+  // Lấy danh sách chỗ ở cho tất cả địa điểm
+  const [accommodationsByLocation, setAccommodationsByLocation] = useState<{[key: number]: Accommodation[]}>({});
+  const [isLoadingAccommodations, setIsLoadingAccommodations] = useState<boolean>(true);
+  const [accommodationError, setAccommodationError] = useState<any>(null);
+  
+  // Tạo các query để lấy danh sách chỗ ở cho mỗi địa điểm
+  useEffect(() => {
+    if (!tripData.accommodations || tripData.accommodations.length === 0) return;
+    
+    const fetchAccommodations = async () => {
+      setIsLoadingAccommodations(true);
+      const results: {[key: number]: Accommodation[]} = {};
+      
+      try {
+        // Lấy danh sách chỗ ở cho mỗi địa điểm
+        for (const accom of tripData.accommodations) {
+          if (accom.location) {
+            const response = await fetch(`/api/accommodations?locationId=${accom.location}`);
+            if (!response.ok) throw new Error(`Không thể lấy chỗ ở cho địa điểm ${accom.location}`);
+            const data = await response.json();
+            results[accom.location] = data;
+          }
+        }
+        
+        setAccommodationsByLocation(results);
+        setAccommodationError(null);
+      } catch (error) {
+        console.error("Lỗi khi lấy chỗ ở:", error);
+        setAccommodationError(error);
+      } finally {
+        setIsLoadingAccommodations(false);
+      }
+    };
+    
+    fetchAccommodations();
+  }, [tripData.accommodations]);
 
   // Phân tách và chuyển đổi các option thành 2 mảng: chiều đi và chiều về
   const [departureOptions, setDepartureOptions] = useState<DepartureOption[]>([]);
@@ -185,9 +210,12 @@ export default function StepTwo() {
     }
   }, [transportationOptions, selectedDepartureOption, selectedReturnOption]);
 
+  // Lấy tất cả các chỗ ở từ tất cả các địa điểm
+  const allAccommodations = Object.values(accommodationsByLocation).flat();
+  
   // Sắp xếp chỗ ở: rẻ nhất lên trước
-  const sortedAccommodations = accommodations
-    ? [...accommodations].sort((a, b) => a.price_per_night - b.price_per_night)
+  const sortedAccommodations = allAccommodations.length > 0
+    ? [...allAccommodations].sort((a, b) => a.price_per_night - b.price_per_night)
     : [];
 
   // Xác định option rẻ nhất cho chỗ ở
@@ -217,11 +245,19 @@ export default function StepTwo() {
             (new Date(tripAccom.checkOut).getTime() - new Date(tripAccom.checkIn).getTime()) /
             (1000 * 60 * 60 * 24)
           );
+          
+          // Tính giá cơ bản với chỗ ở rẻ nhất
           basePriceValue += cheapestAccommodation.price_per_night * nights;
+          
+          // Tìm accommodation được chọn cho điểm dừng này
           const accommodationId = selectedAccommodations[tripAccom.id];
-          const accom = accommodations?.find(a => a.id === accommodationId);
-          currentPriceValue += accom
-            ? accom.price_per_night * nights
+          
+          // Tìm chỗ ở được chọn trong toàn bộ danh sách
+          const selectedAccommodation = sortedAccommodations.find(a => a.id === accommodationId);
+          
+          // Tính giá hiện tại
+          currentPriceValue += selectedAccommodation
+            ? selectedAccommodation.price_per_night * nights
             : cheapestAccommodation.price_per_night * nights;
         }
       });
@@ -235,7 +271,7 @@ export default function StepTwo() {
     selectedAccommodations,
     departureOptions,
     returnOptions,
-    accommodations,
+    sortedAccommodations,
     tripData.accommodations,
     cheapestAccommodation
   ]);
@@ -476,44 +512,63 @@ export default function StepTwo() {
 
       <Separator className="my-6" />
 
-      {/* PHẦN CHỌN CHỖ Ở (giữ nguyên) */}
+      {/* PHẦN CHỌN CHỖ Ở */}
       <div>
         <h3 className="text-lg font-medium mb-4">Chọn chỗ ở</h3>
-        {tripData.accommodations.map((tripAccom: AccommodationInfo) => (
-          <div key={tripAccom.id} className="mb-6">
-            <h4 className="font-medium mb-2">
-              Chỗ ở tại {destinationLocation?.name}{" "}
-              {tripAccom.checkIn && tripAccom.checkOut && (
-                <span className="text-sm text-muted-foreground">
-                  ({new Date(tripAccom.checkIn).toLocaleDateString()} - {new Date(tripAccom.checkOut).toLocaleDateString()})
-                </span>
-              )}
-            </h4>
-            {sortedAccommodations.length === 0 ? (
-              <p>Không có chỗ ở khả dụng.</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {sortedAccommodations.map((accom) => {
-                  let nights = 1;
-                  if (tripAccom.checkIn && tripAccom.checkOut) {
-                    nights = Math.ceil(
-                      (new Date(tripAccom.checkOut).getTime() - new Date(tripAccom.checkIn).getTime()) /
-                      (1000 * 60 * 60 * 24)
-                    );
-                  }
-                  const delta = cheapestAccommodation
-                    ? (accom.price_per_night - cheapestAccommodation.price_per_night) * nights
-                    : 0;
-                  const isSelected = selectedAccommodations[tripAccom.id] === accom.id;
-                  return (
-                    <Card
-                      key={accom.id}
-                      onClick={() => handleSelectAccommodation(accom.id, tripAccom.id)}
-                      className={cn(
-                        "cursor-pointer transition-all hover:shadow-md",
-                        isSelected && "ring-2 ring-primary bg-blue-50"
-                      )}
-                    >
+        {tripData.accommodations && tripData.accommodations.map((tripAccom: AccommodationInfo) => {
+          // Lấy danh sách chỗ ở cho địa điểm này
+          const accommodationsForThisLocation = accommodationsByLocation[tripAccom.location] || [];
+          
+          // Lấy thông tin địa điểm từ ID
+          const locationName = (() => {
+            // Tạo Map của các location đã biết
+            const knownLocations: {[key: number]: string} = {
+              1: "Hà Nội",
+              2: "Hồ Chí Minh",
+              3: "Phú Quốc",
+              4: "Đà Nẵng",
+              5: "Đà Lạt",
+              6: "Nha Trang",
+              7: "Hạ Long",
+            };
+            return knownLocations[tripAccom.location] || "Đang tải...";
+          })();
+          
+          return (
+            <div key={tripAccom.id} className="mb-6">
+              <h4 className="font-medium mb-2">
+                Chỗ ở tại {locationName}{" "}
+                {tripAccom.checkIn && tripAccom.checkOut && (
+                  <span className="text-sm text-muted-foreground">
+                    ({new Date(tripAccom.checkIn).toLocaleDateString()} - {new Date(tripAccom.checkOut).toLocaleDateString()})
+                  </span>
+                )}
+              </h4>
+              {accommodationsForThisLocation.length === 0 ? (
+                <p>Không có chỗ ở khả dụng tại địa điểm này.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {accommodationsForThisLocation.map((accom) => {
+                    let nights = 1;
+                    if (tripAccom.checkIn && tripAccom.checkOut) {
+                      nights = Math.ceil(
+                        (new Date(tripAccom.checkOut).getTime() - new Date(tripAccom.checkIn).getTime()) /
+                        (1000 * 60 * 60 * 24)
+                      );
+                    }
+                    const delta = cheapestAccommodation
+                      ? (accom.price_per_night - cheapestAccommodation.price_per_night) * nights
+                      : 0;
+                    const isSelected = selectedAccommodations[tripAccom.id] === accom.id;
+                    return (
+                      <Card
+                        key={accom.id}
+                        onClick={() => handleSelectAccommodation(accom.id, tripAccom.id)}
+                        className={cn(
+                          "cursor-pointer transition-all hover:shadow-md",
+                          isSelected && "ring-2 ring-primary bg-blue-50"
+                        )}
+                      >
                       <CardContent className="p-4">
                         <div className="flex gap-4">
                           <img
@@ -552,7 +607,7 @@ export default function StepTwo() {
               </div>
             )}
           </div>
-        ))}
+        )})}
       </div>
 
       {/* NÚT QUAY LẠI / TIẾP TỤC */}
