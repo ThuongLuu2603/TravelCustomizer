@@ -71,7 +71,7 @@ interface Accommodation {
 
 interface AccommodationInfo {
   id: number;
-  location: string;
+  location: number; // ID của location
   checkIn: Date | undefined;
   checkOut: Date | undefined;
 }

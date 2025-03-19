@@ -369,6 +369,21 @@ export class MemStorage implements IStorage {
     });
 
     await this.createAccommodation({
+      name: "Radisson Blu Cam Ranh",
+      location_id: nhatrang.id,
+      address: "Cam Ranh, Khánh Hòa",
+      type_id: nhatrang.id,
+      rating: 4.8,
+      price_per_night: 2500000,
+      is_recommended: false,
+      price_difference: 1000000,
+      image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
+      features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"]
+    });
+
+    
+
+    await this.createAccommodation({
       name: "Nam Nghi Resort",
       location_id: phuQuoc.id,
       address: "Mong Tay, Phú Quốc",
@@ -412,6 +427,19 @@ export class MemStorage implements IStorage {
       image_url: "",
       is_recommended: false
     });
+    
+    await this.createAttraction({
+      name: "Vinwonder Nha Trang",
+      location_id: nhatrang.id,
+      description: "Công viên giải trí ở Nha Trang",
+      price: 750000,
+      duration: "4h",
+      image_url: "",
+      is_recommended: false
+    });
+
+
+    
     console.log("Attractions:", Array.from(this.attractions.values()));
   }
 
