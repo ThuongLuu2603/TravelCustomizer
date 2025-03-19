@@ -3,9 +3,9 @@ import { useTripContext } from "@/lib/trip-context";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 interface TransportationOption {
   id: number;
@@ -79,35 +79,37 @@ interface AccommodationInfo {
 export default function StepTwo() {
   const { tripData, updateTripData, setCurrentStep } = useTripContext();
 
-  // Tổng chi phí tạm tính
+  // Tổng chi phí tạm tính (vẫn dùng cho phần chỗ ở)
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [basePrice, setBasePrice] = useState<number>(0);
 
-  // Lựa chọn hiện tại của người dùng
+  // Lựa chọn chuyến bay hiện tại
   const [selectedDepartureOption, setSelectedDepartureOption] = useState<number | null>(
     tripData.selectedDepartureOption || null
   );
-  
   const [selectedReturnOption, setSelectedReturnOption] = useState<number | null>(
     tripData.selectedReturnOption || null
   );
-  
+  // Các lựa chọn chỗ ở
   const [selectedAccommodations, setSelectedAccommodations] = useState<{ [key: number]: number | null }>(
     tripData.selectedAccommodations || {}
   );
+
+  // State điều khiển hiển thị toàn bộ lựa chọn hay ẩn (cho từng cột)
+  const [showAllDepartures, setShowAllDepartures] = useState(false);
+  const [showAllReturns, setShowAllReturns] = useState(false);
 
   // Lấy thông tin location
   const { data: originLocation } = useQuery({
     queryKey: [`/api/locations/${tripData.origin_id}`],
     enabled: !!tripData.origin_id,
   });
-  
   const { data: destinationLocation } = useQuery({
     queryKey: [`/api/locations/${tripData.destination_id}`],
     enabled: !!tripData.destination_id,
   });
 
-  // Lấy danh sách phương tiện
+  // Lấy danh sách TransportationOption (dữ liệu từ storage hoặc file)
   const {
     data: transportationOptions,
     isLoading: isLoadingTransport,
@@ -131,14 +133,14 @@ export default function StepTwo() {
     enabled: !!(tripData.destination_id && tripData.accommodations?.[0]?.checkIn),
   });
 
-  // Phân tách các option chuyến đi và chuyến về
+  // Phân tách và chuyển đổi các option thành 2 mảng: chiều đi và chiều về
   const [departureOptions, setDepartureOptions] = useState<DepartureOption[]>([]);
   const [returnOptions, setReturnOptions] = useState<ReturnOption[]>([]);
 
   useEffect(() => {
     if (!transportationOptions) return;
-    
-    // Chuyển đổi từ TransportationOption sang DepartureOption và ReturnOption
+
+    // Chuyển đổi mỗi TransportationOption thành 2 option:
     const departures: DepartureOption[] = transportationOptions.map(option => ({
       id: option.id * 100, // Tạo ID riêng biệt
       type_id: option.type_id,
@@ -149,33 +151,37 @@ export default function StepTwo() {
       baggage: option.departure_baggage,
       origin_id: option.origin_id,
       destination_id: option.destination_id,
-      price: option.price / 2, // Chia đôi giá
+      price: option.price / 2, // Giá vé chia đôi (vé khứ hồi)
       is_recommended: option.is_recommended,
     }));
 
     const returns: ReturnOption[] = transportationOptions.map(option => ({
-      id: option.id * 100 + 1, // Tạo ID riêng biệt và khác với departure
+      id: option.id * 100 + 1, // Tạo ID riêng biệt
       type_id: option.type_id,
       provider: option.provider,
       flight_number: option.return_flight_number,
       departure_time: option.return_time,
       arrival_time: option.return_arrival_time,
       baggage: option.return_baggage,
-      origin_id: option.destination_id, // Đảo ngược chiều
-      destination_id: option.origin_id, // Đảo ngược chiều
-      price: option.price / 2, // Chia đôi giá
+      origin_id: option.destination_id, // Đảo chiều
+      destination_id: option.origin_id,
+      price: option.price / 2,
       is_recommended: option.is_recommended,
     }));
 
-    setDepartureOptions(departures);
-    setReturnOptions(returns);
-    
-    // Thiết lập mặc định nếu chưa có
-    if (!selectedDepartureOption && departures.length > 0) {
-      setSelectedDepartureOption(departures[0].id);
+    // Sắp xếp theo giá tăng dần (rẻ nhất lên trước)
+    const sortedDepartures = departures.sort((a, b) => a.price - b.price);
+    const sortedReturns = returns.sort((a, b) => a.price - b.price);
+
+    setDepartureOptions(sortedDepartures);
+    setReturnOptions(sortedReturns);
+
+    // Nếu chưa có lựa chọn, mặc định chọn chuyến rẻ nhất (là phần tử đầu tiên)
+    if (!selectedDepartureOption && sortedDepartures.length > 0) {
+      setSelectedDepartureOption(sortedDepartures[0].id);
     }
-    if (!selectedReturnOption && returns.length > 0) {
-      setSelectedReturnOption(returns[0].id);
+    if (!selectedReturnOption && sortedReturns.length > 0) {
+      setSelectedReturnOption(sortedReturns[0].id);
     }
   }, [transportationOptions, selectedDepartureOption, selectedReturnOption]);
 
@@ -185,30 +191,25 @@ export default function StepTwo() {
     : [];
 
   // Xác định option rẻ nhất cho chỗ ở
-  const cheapestAccommodation = sortedAccommodations.length > 0
-    ? sortedAccommodations[0]
-    : null;
+  const cheapestAccommodation = sortedAccommodations.length > 0 ? sortedAccommodations[0] : null;
 
-  // Tính giá cơ sở và tổng chi phí tạm tính
+  // Tính giá cơ sở (basePrice) và tổng chi phí tạm tính (totalPrice)
   useEffect(() => {
     let basePriceValue = 0;
     let currentPriceValue = 0;
-    
-    // Tính giá vé máy bay cơ bản (cheapest)
+
+    // Tính giá vé máy bay (dựa trên option rẻ nhất cho chiều đi và chiều về)
     if (departureOptions.length > 0 && returnOptions.length > 0) {
-      const cheapestDeparture = [...departureOptions].sort((a, b) => a.price - b.price)[0];
-      const cheapestReturn = [...returnOptions].sort((a, b) => a.price - b.price)[0];
+      const cheapestDeparture = departureOptions[0];
+      const cheapestReturn = returnOptions[0];
       basePriceValue += cheapestDeparture.price + cheapestReturn.price;
-      
-      // Tính giá vé máy bay hiện tại đang chọn
       const selectedDeparture = departureOptions.find(o => o.id === selectedDepartureOption);
       const selectedReturn = returnOptions.find(o => o.id === selectedReturnOption);
-      
       currentPriceValue += selectedDeparture ? selectedDeparture.price : 0;
       currentPriceValue += selectedReturn ? selectedReturn.price : 0;
     }
-    
-    // Tính giá chỗ ở cơ bản (cheapest accommodation)
+
+    // Tính giá chỗ ở
     if (cheapestAccommodation && tripData.accommodations) {
       tripData.accommodations.forEach((tripAccom: AccommodationInfo) => {
         if (tripAccom.checkIn && tripAccom.checkOut) {
@@ -217,20 +218,15 @@ export default function StepTwo() {
             (1000 * 60 * 60 * 24)
           );
           basePriceValue += cheapestAccommodation.price_per_night * nights;
-          
-          // Tính giá chỗ ở hiện tại đang chọn
           const accommodationId = selectedAccommodations[tripAccom.id];
           const accom = accommodations?.find(a => a.id === accommodationId);
-          
-          if (accom) {
-            currentPriceValue += accom.price_per_night * nights;
-          } else if (cheapestAccommodation) {
-            currentPriceValue += cheapestAccommodation.price_per_night * nights;
-          }
+          currentPriceValue += accom
+            ? accom.price_per_night * nights
+            : cheapestAccommodation.price_per_night * nights;
         }
       });
     }
-    
+
     setBasePrice(basePriceValue);
     setTotalPrice(currentPriceValue);
   }, [
@@ -244,12 +240,12 @@ export default function StepTwo() {
     cheapestAccommodation
   ]);
 
-  // Xử lý chọn chuyến đi
+  // Xử lý chọn chuyến bay chiều đi
   const handleSelectDeparture = (id: number) => {
     setSelectedDepartureOption(id);
   };
 
-  // Xử lý chọn chuyến về
+  // Xử lý chọn chuyến bay chiều về
   const handleSelectReturn = (id: number) => {
     setSelectedReturnOption(id);
   };
@@ -281,18 +277,16 @@ export default function StepTwo() {
       alert("Vui lòng chọn đầy đủ chỗ ở cho tất cả các điểm dừng");
       return;
     }
-    
     updateTripData({
       selectedDepartureOption,
       selectedReturnOption,
       selectedAccommodations,
       totalPrice,
     });
-    
     setCurrentStep(3);
   };
 
-  // Khởi tạo lựa chọn mặc định nếu chưa có
+  // Khởi tạo lựa chọn chỗ ở mặc định nếu chưa có
   useEffect(() => {
     if (sortedAccommodations.length > 0 && tripData.accommodations && Object.keys(selectedAccommodations).length === 0) {
       const initAccom: { [key: number]: number | null } = {};
@@ -321,6 +315,7 @@ export default function StepTwo() {
 
   return (
     <div className="space-y-6">
+      {/* PHẦN TỔNG CHI PHÍ */}
       <div className="bg-sky-50 p-4 rounded-lg mb-6 shadow-sm">
         <h2 className="text-lg font-semibold mb-2">Tổng chi phí tạm tính</h2>
         <div className="flex justify-between items-center">
@@ -335,154 +330,159 @@ export default function StepTwo() {
           </div>
         )}
       </div>
-      
-      {/* PHẦN CHUYẾN BAY ĐI */}
-      <div>
-        <h3 className="text-lg font-medium mb-4">
-          Chuyến đi: {originLocation && originLocation.name ? originLocation.name : ''} → {destinationLocation && destinationLocation.name ? destinationLocation.name : ''}
-        </h3>
-        {departureOptions.length === 0 ? (
-          <p>Không có chuyến bay nào khả dụng.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {departureOptions.map((option) => {
-              const cheapestOption = [...departureOptions].sort((a, b) => a.price - b.price)[0];
-              const delta = option.price - cheapestOption.price;
-              const isSelected = selectedDepartureOption === option.id;
-              
-              return (
-                <Card
-                  key={option.id}
-                  onClick={() => handleSelectDeparture(option.id)}
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    isSelected && "ring-2 ring-primary bg-blue-50"
-                  )}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-4">
-                        <div className="text-center">
-                          <div className="font-semibold">{option.departure_time}</div>
-                          <div className="text-xs text-gray-500">{originLocation && originLocation.name ? originLocation.name : ''}</div>
-                        </div>
-                        
-                        <div className="flex flex-col items-center">
-                          <div className="text-xs text-gray-500">{option.flight_number}</div>
-                          <div className="relative w-28 h-6 flex items-center">
-                            <div className="border-t border-gray-300 w-full"></div>
-                            <div className="absolute right-0 text-gray-500">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M5 12h14M12 5l7 7-7 7" />
-                              </svg>
-                            </div>
+
+      {/* CHIA GIAO DIỆN 2 CỘT: CHIỀU ĐI & CHIỀU VỀ */}
+      <div className="flex flex-col md:flex-row md:space-x-6">
+        {/* Cột CHIỀU ĐI */}
+        <div className="flex-1">
+          <h3 className="text-lg font-medium mb-4">
+            Chiều đi: {originLocation?.name} → {destinationLocation?.name}
+          </h3>
+          {/* Hiển thị option được chọn hoặc tất cả nếu "Xem thêm" */}
+          <div className="space-y-4">
+            {(showAllDepartures ? departureOptions : departureOptions.filter(o => o.id === selectedDepartureOption))
+              .map((option) => {
+                // Option rẻ nhất là phần tử đầu tiên sau khi sắp xếp
+                const cheapestOption = departureOptions[0];
+                const delta = option.price - cheapestOption.price;
+                const isSelected = selectedDepartureOption === option.id;
+                const isCheapest = option.id === cheapestOption.id;
+                return (
+                  <Card
+                    key={option.id}
+                    onClick={() => handleSelectDeparture(option.id)}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-md",
+                      isSelected && "ring-2 ring-primary bg-blue-50"
+                    )}
+                  >
+                    <CardHeader className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-4">
+                          <div className="text-center">
+                            <div className="font-semibold">{option.departure_time}</div>
+                            <div className="text-xs text-gray-500">{originLocation?.name}</div>
                           </div>
-                          <div className="text-xs text-gray-500">{option.provider}</div>
-                        </div>
-                        
-                        <div className="text-center">
-                          <div className="font-semibold">{option.arrival_time}</div>
-                          <div className="text-xs text-gray-500">{destinationLocation && destinationLocation.name ? destinationLocation.name : ''}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col items-end">
-                        {isSelected && (
-                          <Badge className="mb-1" variant="outline">Đã chọn</Badge>
-                        )}
-                        {delta > 0 && (
-                          <span className="text-xs font-medium text-primary mb-1">
-                            +{delta.toLocaleString()}đ
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      
-      {/* PHẦN CHUYẾN BAY VỀ */}
-      <div>
-        <h3 className="text-lg font-medium mb-4">
-          Chuyến về: {destinationLocation && destinationLocation.name ? destinationLocation.name : ''} → {originLocation && originLocation.name ? originLocation.name : ''}
-        </h3>
-        {returnOptions.length === 0 ? (
-          <p>Không có chuyến bay nào khả dụng.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {returnOptions.map((option) => {
-              const cheapestOption = [...returnOptions].sort((a, b) => a.price - b.price)[0];
-              const delta = option.price - cheapestOption.price;
-              const isSelected = selectedReturnOption === option.id;
-              
-              return (
-                <Card
-                  key={option.id}
-                  onClick={() => handleSelectReturn(option.id)}
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    isSelected && "ring-2 ring-primary bg-blue-50"
-                  )}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-4">
-                        <div className="text-center">
-                          <div className="font-semibold">{option.departure_time}</div>
-                          <div className="text-xs text-gray-500">{destinationLocation && destinationLocation.name ? destinationLocation.name : ''}</div>
-                        </div>
-                        
-                        <div className="flex flex-col items-center">
-                          <div className="text-xs text-gray-500">{option.flight_number}</div>
-                          <div className="relative w-28 h-6 flex items-center">
-                            <div className="border-t border-gray-300 w-full"></div>
-                            <div className="absolute right-0 text-gray-500">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M5 12h14M12 5l7 7-7 7" />
-                              </svg>
+                          <div className="flex flex-col items-center">
+                            <div className="text-xs text-gray-500">{option.flight_number}</div>
+                            <div className="relative w-28 h-6 flex items-center">
+                              <div className="border-t border-gray-300 w-full"></div>
+                              <div className="absolute right-0 text-gray-500">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                              </div>
                             </div>
+                            <div className="text-xs text-gray-500">{option.provider}</div>
                           </div>
-                          <div className="text-xs text-gray-500">{option.provider}</div>
+                          <div className="text-center">
+                            <div className="font-semibold">{option.arrival_time}</div>
+                            <div className="text-xs text-gray-500">{destinationLocation?.name}</div>
+                          </div>
                         </div>
-                        
-                        <div className="text-center">
-                          <div className="font-semibold">{option.arrival_time}</div>
-                          <div className="text-xs text-gray-500">{originLocation && originLocation.name ? originLocation.name : ''}</div>
+                        <div className="flex flex-col items-end">
+                          {isSelected && <Badge variant="outline">Đã chọn</Badge>}
+                          {isCheapest && <Badge variant="secondary">Đề xuất</Badge>}
+                          {delta > 0 && (
+                            <span className="text-xs font-medium text-primary">
+                              +{delta.toLocaleString()}đ
+                            </span>
+                          )}
                         </div>
                       </div>
-                      
-                      <div className="flex flex-col items-end">
-                        {isSelected && (
-                          <Badge className="mb-1" variant="outline">Đã chọn</Badge>
-                        )}
-                        {delta > 0 && (
-                          <span className="text-xs font-medium text-primary mb-1">
-                            +{delta.toLocaleString()}đ
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    </CardHeader>
+                  </Card>
+                );
+              })}
           </div>
-        )}
+          {departureOptions.length > 1 && (
+            <div className="mt-2">
+              <Button variant="link" onClick={() => setShowAllDepartures(!showAllDepartures)}>
+                {showAllDepartures ? "Ẩn bớt" : "Xem thêm"}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Cột CHIỀU VỀ */}
+        <div className="flex-1 mt-6 md:mt-0">
+          <h3 className="text-lg font-medium mb-4">
+            Chiều về: {destinationLocation?.name} → {originLocation?.name}
+          </h3>
+          <div className="space-y-4">
+            {(showAllReturns ? returnOptions : returnOptions.filter(o => o.id === selectedReturnOption))
+              .map((option) => {
+                const cheapestOption = returnOptions[0];
+                const delta = option.price - cheapestOption.price;
+                const isSelected = selectedReturnOption === option.id;
+                const isCheapest = option.id === cheapestOption.id;
+                return (
+                  <Card
+                    key={option.id}
+                    onClick={() => handleSelectReturn(option.id)}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-md",
+                      isSelected && "ring-2 ring-primary bg-blue-50"
+                    )}
+                  >
+                    <CardHeader className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-4">
+                          <div className="text-center">
+                            <div className="font-semibold">{option.departure_time}</div>
+                            <div className="text-xs text-gray-500">{destinationLocation?.name}</div>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <div className="text-xs text-gray-500">{option.flight_number}</div>
+                            <div className="relative w-28 h-6 flex items-center">
+                              <div className="border-t border-gray-300 w-full"></div>
+                              <div className="absolute right-0 text-gray-500">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-500">{option.provider}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-semibold">{option.arrival_time}</div>
+                            <div className="text-xs text-gray-500">{originLocation?.name}</div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          {isSelected && <Badge variant="outline">Đã chọn</Badge>}
+                          {isCheapest && <Badge variant="secondary">Đề xuất</Badge>}
+                          {delta > 0 && (
+                            <span className="text-xs font-medium text-primary">
+                              +{delta.toLocaleString()}đ
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+          </div>
+          {returnOptions.length > 1 && (
+            <div className="mt-2">
+              <Button variant="link" onClick={() => setShowAllReturns(!showAllReturns)}>
+                {showAllReturns ? "Ẩn bớt" : "Xem thêm"}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <Separator className="my-6" />
 
-      {/* PHẦN HIỂN THỊ CHỖ Ở */}
+      {/* PHẦN CHỌN CHỖ Ở (giữ nguyên) */}
       <div>
         <h3 className="text-lg font-medium mb-4">Chọn chỗ ở</h3>
         {tripData.accommodations.map((tripAccom: AccommodationInfo) => (
           <div key={tripAccom.id} className="mb-6">
             <h4 className="font-medium mb-2">
-              Chỗ ở tại {destinationLocation && destinationLocation.name ? destinationLocation.name : ''}{" "}
+              Chỗ ở tại {destinationLocation?.name}{" "}
               {tripAccom.checkIn && tripAccom.checkOut && (
                 <span className="text-sm text-muted-foreground">
                   ({new Date(tripAccom.checkIn).toLocaleDateString()} - {new Date(tripAccom.checkOut).toLocaleDateString()})
@@ -501,13 +501,10 @@ export default function StepTwo() {
                       (1000 * 60 * 60 * 24)
                     );
                   }
-                  
                   const delta = cheapestAccommodation
                     ? (accom.price_per_night - cheapestAccommodation.price_per_night) * nights
                     : 0;
-                    
                   const isSelected = selectedAccommodations[tripAccom.id] === accom.id;
-                  
                   return (
                     <Card
                       key={accom.id}
@@ -558,7 +555,7 @@ export default function StepTwo() {
         ))}
       </div>
 
-      {/* NÚT QUAY LẠI / TIẾP TỤC Ở DƯỚI CÙNG */}
+      {/* NÚT QUAY LẠI / TIẾP TỤC */}
       <div className="flex justify-between p-6 pt-4">
         <Button variant="outline" onClick={handleBack} className="px-4 py-2">
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

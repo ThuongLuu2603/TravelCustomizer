@@ -34,22 +34,22 @@ export default function StepThree() {
   const [days, setDays] = useState<Date[]>([]);
 
   // Get destination information
-  const { data: destinationLocation } = useQuery({
-    queryKey: [`/api/locations/${tripData.destinationId}`],
-    enabled: !!tripData.destinationId,
+  const { data: destinationLocation } = useQuery<any>({
+    queryKey: [`/api/locations/${tripData.destination_id}`],
+    enabled: !!tripData.destination_id,
   });
 
   // Get attractions for the destination
-  const { data: attractions, isLoading: isLoadingAttractions } = useQuery({
-    queryKey: [`/api/attractions?locationId=${tripData.destinationId}`],
-    enabled: !!tripData.destinationId,
+  const { data: attractions, isLoading: isLoadingAttractions } = useQuery<Attraction[]>({
+    queryKey: [`/api/attractions?locationId=${tripData.destination_id}`],
+    enabled: !!tripData.destination_id,
   });
 
   // Initialize days array based on trip dates
   useEffect(() => {
-    if (tripData.startDate && tripData.endDate) {
-      const start = new Date(tripData.startDate);
-      const end = new Date(tripData.endDate);
+    if (tripData.start_date && tripData.end_date) {
+      const start = new Date(tripData.start_date);
+      const end = new Date(tripData.end_date);
       const dayCount = differenceInDays(end, start) + 1;
       
       const daysArray: Date[] = [];
@@ -59,7 +59,7 @@ export default function StepThree() {
       
       setDays(daysArray);
     }
-  }, [tripData.startDate, tripData.endDate]);
+  }, [tripData.start_date, tripData.end_date]);
 
   // Calculate total price including attractions
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function StepThree() {
     let price = tripData.totalPrice || 0;
     
     // Add attraction prices
-    if (selectedAttractions.length > 0 && attractions) {
+    if (selectedAttractions.length > 0 && attractions && Array.isArray(attractions)) {
       selectedAttractions.forEach((selected) => {
         const attraction = attractions.find((a: Attraction) => a.id === selected.attractionId);
         if (attraction) {
@@ -135,7 +135,7 @@ export default function StepThree() {
         <div className="bg-neutral-100 p-4 rounded-lg mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
             <div className="mb-2 md:mb-0">
-              <h3 className="font-medium">Điểm đến: {destinationLocation?.name || "Đang tải..."}</h3>
+              <h3 className="font-medium">Điểm đến: {destinationLocation && destinationLocation.name ? destinationLocation.name : "Đang tải..."}</h3>
               <p className="text-sm text-neutral-600">
                 {days.length > 0 ? (
                   <>
@@ -193,7 +193,7 @@ export default function StepThree() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {attractions && attractions.map((attraction: Attraction) => (
+                  {attractions && Array.isArray(attractions) && attractions.map((attraction: Attraction) => (
                     <div 
                       key={attraction.id}
                       className={`border rounded-lg overflow-hidden cursor-pointer transition-all shadow-hover ${

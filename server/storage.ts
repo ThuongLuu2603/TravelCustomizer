@@ -225,7 +225,7 @@ export class MemStorage implements IStorage {
       return_baggage: "20kg",
 
       price: 2800000, // tổng giá khứ hồi
-      is_recommended: true,
+      is_recommended: false,
       price_difference: 0,
       features: ["Bay thẳng", "Hành lý 20kg"]
     });
@@ -249,7 +249,7 @@ export class MemStorage implements IStorage {
       return_baggage: "7kg",
 
       price: 1990000,
-      is_recommended: false,
+      is_recommended: true,
       price_difference: -810000,
       features: ["Bay thẳng"]
     });
