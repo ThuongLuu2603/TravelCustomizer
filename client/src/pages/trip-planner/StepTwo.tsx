@@ -99,12 +99,20 @@ export default function StepTwo() {
   const [showAllDepartures, setShowAllDepartures] = useState(false);
   const [showAllReturns, setShowAllReturns] = useState(false);
 
+  // Define Location interface
+  interface Location {
+    id: number;
+    name: string;
+    type: string;
+    description?: string;
+  }
+  
   // Lấy thông tin location
-  const { data: originLocation } = useQuery({
+  const { data: originLocation = { id: 0, name: "Unknown", type: "origin" } } = useQuery<Location>({
     queryKey: [`/api/locations/${tripData.origin_id}`],
     enabled: !!tripData.origin_id,
   });
-  const { data: destinationLocation } = useQuery({
+  const { data: destinationLocation = { id: 0, name: "Unknown", type: "destination" } } = useQuery<Location>({
     queryKey: [`/api/locations/${tripData.destination_id}`],
     enabled: !!tripData.destination_id,
   });
