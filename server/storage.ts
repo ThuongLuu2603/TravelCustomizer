@@ -952,167 +952,177 @@ await this.createAccommodation({
 console.log("Accommodations:", Array.from(this.accommodations.values()));
 
     // Attractions
-    await this.createAttraction({
-      name: "Vinpearl Safari",
-      location_id: phuQuoc.id,
-      description: "Vườn thú bán hoang dã đầu tiên tại Việt Nam",
-      price: 650000,
-      duration: "3h",
-      opentime: "10:00",
-      closetime: "21:00",
-      image_url: "",
-      is_recommended: true
-    });
+// Attractions
+await this.createAttraction({
+  name: "Vinpearl Safari",
+  location_id: phuQuoc.id,
+  description: "Vườn thú bán hoang dã đầu tiên tại Việt Nam",
+  price: 650000,
+  duration: "3h",
+  opentime: "10:00",
+  closetime: "21:00",
+  image_url: "",
+  is_recommended: true,
+  latitude: 10.3375,  // Vĩ độ của Vinpearl Safari, Phú Quốc
+  longitude: 103.8800 // Kinh độ của Vinpearl Safari, Phú Quốc
+});
 
-    await this.createAttraction({
-      name: "Bãi Sao",
-      location_id: phuQuoc.id,
-      description: "Một trong những bãi biển đẹp nhất Phú Quốc",
-      price: 50000,
-      duration: "4h",
-      opentime: "06:00",
-      closetime: "18:00",
-      image_url: "",
-      is_recommended: true
-    });
+await this.createAttraction({
+  name: "Bãi Sao",
+  location_id: phuQuoc.id,
+  description: "Một trong những bãi biển đẹp nhất Phú Quốc",
+  price: 50000,
+  duration: "4h",
+  opentime: "06:00",
+  closetime: "18:00",
+  image_url: "",
+  is_recommended: true,
+  latitude: 10.1530,  // Vĩ độ của Bãi Sao, Phú Quốc
+  longitude: 103.9650 // Kinh độ của Bãi Sao, Phú Quốc
+});
 
-    await this.createAttraction({
-      name: "Cáp treo Hòn Thơm",
-      location_id: phuQuoc.id,
-      description: "Cáp treo vượt biển dài nhất thế giới",
-      price: 500000,
-      duration: "2h",
-      opentime: "10:00",
-      closetime: "21:00",
-      image_url: "",
-      is_recommended: false
-    });
+await this.createAttraction({
+  name: "Cáp treo Hòn Thơm",
+  location_id: phuQuoc.id,
+  description: "Cáp treo vượt biển dài nhất thế giới",
+  price: 500000,
+  duration: "2h",
+  opentime: "10:00",
+  closetime: "21:00",
+  image_url: "",
+  is_recommended: false,
+  latitude: 10.1500,  // Vĩ độ của Cáp treo Hòn Thơm, Phú Quốc
+  longitude: 103.9700 // Kinh độ của Cáp treo Hòn Thơm, Phú Quốc
+});
 
-    // Nha Trang (giữ nguyên và bổ sung thêm)
-    await this.createAttraction({
-      name: "Vinwonders Nha Trang",
-      location_id: nhaTrang.id, // ID: 6
-      description: "Công viên giải trí ở Nha Trang",
-      price: 750000,
-      opentime: "10:00",
-      closetime: "21:00",
-      duration: "4h",
-      image_url: "",
-      is_recommended: false
-    });
+// Nha Trang
+await this.createAttraction({
+  name: "Vinwonders Nha Trang",
+  location_id: nhaTrang.id, // ID: 6
+  description: "Công viên giải trí ở Nha Trang",
+  price: 750000,
+  opentime: "10:00",
+  closetime: "21:00",
+  duration: "4h",
+  image_url: "",
+  is_recommended: false,
+  latitude: 12.1980,  // Vĩ độ của Vinwonders Nha Trang
+  longitude: 109.2980 // Kinh độ của Vinwonders Nha Trang
+});
 
-    await this.createAttraction({
-      name: "Tháp Bà Ponagar",
-      location_id: nhaTrang.id, // ID: 6
-      description: "Di tích lịch sử Chăm Pa cổ kính",
-      price: 22000,
-      duration: "1h",
-      opentime: "06:00",
-      closetime: "16:00",
-      image_url: "",
-      is_recommended: true
-    });
+await this.createAttraction({
+  name: "Tháp Bà Ponagar",
+  location_id: nhaTrang.id, // ID: 6
+  description: "Di tích lịch sử Chăm Pa cổ kính",
+  price: 22000,
+  duration: "1h",
+  opentime: "06:00",
+  closetime: "16:00",
+  image_url: "",
+  is_recommended: true,
+  latitude: 12.2650,  // Vĩ độ của Tháp Bà Ponagar, Nha Trang
+  longitude: 109.1940 // Kinh độ của Tháp Bà Ponagar, Nha Trang
+});
 
-    await this.createAttraction({
-      name: "Đảo Hòn Mun",
-      location_id: nhaTrang.id, // ID: 6
-      description: "Khu vực lặn biển ngắm san hô nổi tiếng",
-      price: 300000,
-      duration: "3h",
-      opentime: "10:00",
-      closetime: "16:00",
-      image_url: "",
-      is_recommended: true
-    });
+await this.createAttraction({
+  name: "Đảo Hòn Mun",
+  location_id: nhaTrang.id, // ID: 6
+  description: "Khu vực lặn biển ngắm san hô nổi tiếng",
+  price: 300000,
+  duration: "3h",
+  opentime: "10:00",
+  closetime: "16:00",
+  image_url: "",
+  is_recommended: true,
+  latitude: 12.1660,  // Vĩ độ của Đảo Hòn Mun, Nha Trang
+  longitude: 109.3000 // Kinh độ của Đảo Hòn Mun, Nha Trang
+});
 
-    // Đà Lạt (bổ sung mới)
-    await this.createAttraction({
-      name: "Hồ Xuân Hương",
-      location_id: daLat.id, // ID: 5
-      description: "Hồ nước nổi tiếng giữa lòng thành phố Đà Lạt",
-      price: 0,
-      duration: "2h",
-      opentime: "00:00",
-      closetime: "23:59",
-      image_url: "",
-      is_recommended: true
-    });
+// Đà Lạt
+await this.createAttraction({
+  name: "Hồ Xuân Hương",
+  location_id: daLat.id, // ID: 5
+  description: "Hồ nước nổi tiếng giữa lòng thành phố Đà Lạt",
+  price: 0,
+  duration: "2h",
+  opentime: "00:00",
+  closetime: "23:59",
+  image_url: "",
+  is_recommended: true,
+  latitude: 11.9410,  // Vĩ độ của Hồ Xuân Hương, Đà Lạt
+  longitude: 108.4380 // Kinh độ của Hồ Xuân Hương, Đà Lạt
+});
 
-    await this.createAttraction({
-      name: "Thung Lũng Tình Yêu",
-      location_id: daLat.id, // ID: 5
-      description: "Địa điểm lãng mạn với cảnh quan thiên nhiên tuyệt đẹp",
-      price: 250000,
-      duration: "3h",
-      opentime: "08:00",
-      closetime: "18:00",
-      image_url: "",
-      is_recommended: true
-    });
+await this.createAttraction({
+  name: "Thung Lũng Tình Yêu",
+  location_id: daLat.id, // ID: 5
+  description: "Địa điểm lãng mạn với cảnh quan thiên nhiên tuyệt đẹp",
+  price: 250000,
+  duration: "3h",
+  opentime: "08:00",
+  closetime: "18:00",
+  image_url: "",
+  is_recommended: true,
+  latitude: 11.9660,  // Vĩ độ của Thung Lũng Tình Yêu, Đà Lạt
+  longitude: 108.4400 // Kinh độ của Thung Lũng Tình Yêu, Đà Lạt
+});
 
-    await this.createAttraction({
-      name: "Cáp treo Đà Lạt",
-      location_id: daLat.id, // ID: 5
-      description: "Trải nghiệm cáp treo ngắm toàn cảnh Đà Lạt",
-      price: 100000,
-      duration: "1h",
-      opentime: "08:00",
-      closetime: "16:00",
-      image_url: "",
-      is_recommended: false
-    });
+await this.createAttraction({
+  name: "Cáp treo Đà Lạt",
+  location_id: daLat.id, // ID: 5
+  description: "Trải nghiệm cáp treo ngắm toàn cảnh Đà Lạt",
+  price: 100000,
+  duration: "1h",
+  opentime: "08:00",
+  closetime: "16:00",
+  image_url: "",
+  is_recommended: false,
+  latitude: 11.9040,  // Vĩ độ của Cáp treo Đà Lạt (gần đồi Robin)
+  longitude: 108.4150 // Kinh độ của Cáp treo Đà Lạt
+});
 
-    // Hạ Long (bổ sung mới)
-    await this.createAttraction({
-      name: "Vịnh Hạ Long",
-      location_id: haLong.id, // ID: 7
-      description: "Kỳ quan thiên nhiên thế giới với hàng ngàn đảo đá",
-      price: 290000,
-      duration: "4h",
-      opentime: "00:00",
-      closetime: "23:59",
-      image_url: "",
-      is_recommended: true
-    });
+// Hạ Long
+await this.createAttraction({
+  name: "Vịnh Hạ Long",
+  location_id: haLong.id, // ID: 7
+  description: "Kỳ quan thiên nhiên thế giới với hàng ngàn đảo đá",
+  price: 290000,
+  duration: "4h",
+  opentime: "00:00",
+  closetime: "23:59",
+  image_url: "",
+  is_recommended: true,
+  latitude: 20.9100,  // Vĩ độ của Vịnh Hạ Long
+  longitude: 107.1830 // Kinh độ của Vịnh Hạ Long
+});
 
-    await this.createAttraction({
-      name: "Hang Sửng Sốt",
-      location_id: haLong.id, // ID: 7
-      description: "Hang động lớn và đẹp nhất Vịnh Hạ Long",
-      price: 50000,
-      opentime: "10:00",
-      closetime: "16:00",
-      duration: "1h",
-      image_url: "",
-      is_recommended: true
-    });
+await this.createAttraction({
+  name: "Hang Sửng Sốt",
+  location_id: haLong.id, // ID: 7
+  description: "Hang động lớn và đẹp nhất Vịnh Hạ Long",
+  price: 50000,
+  opentime: "10:00",
+  closetime: "16:00",
+  duration: "1h",
+  image_url: "",
+  is_recommended: true,
+  latitude: 20.8850,  // Vĩ độ của Hang Sửng Sốt, Vịnh Hạ Long
+  longitude: 107.2000 // Kinh độ của Hang Sửng Sốt, Vịnh Hạ Long
+});
 
-    await this.createAttraction({
-      name: "Cáp treo Nữ Hoàng",
-      location_id: haLong.id, // ID: 7
-      description: "Cáp treo ngắm toàn cảnh Vịnh Hạ Long từ trên cao",
-      price: 350000,
-      duration: "2h",
-      opentime: "08:00",
-      closetime: "21:00",
-      image_url: "",
-      is_recommended: false
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+await this.createAttraction({
+  name: "Cáp treo Nữ Hoàng",
+  location_id: haLong.id, // ID: 7
+  description: "Cáp treo ngắm toàn cảnh Vịnh Hạ Long từ trên cao",
+  price: 350000,
+  duration: "2h",
+  opentime: "08:00",
+  closetime: "21:00",
+  image_url: "",
+  is_recommended: false,
+  latitude: 20.9560,  // Vĩ độ của Cáp treo Nữ Hoàng, Hạ Long
+  longitude: 107.0470 // Kinh độ của Cáp treo Nữ Hoàng, Hạ Long
+});
 
 
 
