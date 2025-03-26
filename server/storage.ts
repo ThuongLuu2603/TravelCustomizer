@@ -822,105 +822,134 @@ export class MemStorage implements IStorage {
     const resort = await this.createAccommodationType({ name: "Resort" });
     console.log("Accommodation types:", Array.from(this.accommodationTypes.values()));
 
-    // Accommodations
-    await this.createAccommodation({
-      name: "Vinpearl Resort & Spa",
-      location_id: phuQuoc.id,
-      address: "Bãi Dài, Phú Quốc",
-      type_id: resort.id,
-      rating: 5.0,
-      price_per_night: 2000000,
-      is_recommended: true,
-      price_difference: 0,
-      Breakfast: true,
-      image_url: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9",
-      features: ["Bãi biển", "Hồ bơi", "Spa", "Phòng gia đình"]
-    });
+// Accommodations
+await this.createAccommodation({
+  name: "Vinpearl Resort & Spa",
+  location_id: phuQuoc.id,
+  address: "Bãi Dài, Phú Quốc",
+  type_id: resort.id,
+  rating: 5.0,
+  checkin_time: "14:00",
+  checkout_time: "12:00",
+  price_per_night: 2000000,
+  is_recommended: true,
+  price_difference: 0,
+  Breakfast: true,
+  image_url: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9",
+  features: ["Bãi biển", "Hồ bơi", "Spa", "Phòng gia đình"],
+  latitude: 10.3430,  // Vĩ độ của Bãi Dài, Phú Quốc
+  longitude: 103.8568 // Kinh độ của Bãi Dài, Phú Quốc
+});
 
-    await this.createAccommodation({
-      name: "Novotel Phú Quốc Resort",
-      location_id: phuQuoc.id,
-      address: "Dương Đông, Phú Quốc",
-      type_id: resort.id,
-      rating: 4.7,
-      Breakfast: true,
-      price_per_night: 1625000,
-      is_recommended: false,
-      price_difference: -375000,
-      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
-      features: ["Bãi biển", "Hồ bơi", "Quầy bar"]
-    });
+await this.createAccommodation({
+  name: "Novotel Phú Quốc Resort",
+  location_id: phuQuoc.id,
+  address: "Dương Đông, Phú Quốc",
+  type_id: resort.id,
+  rating: 4.7,
+  checkin_time: "14:00",
+  checkout_time: "12:00",
+  Breakfast: true,
+  price_per_night: 1625000,
+  is_recommended: false,
+  price_difference: -375000,
+  image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
+  features: ["Bãi biển", "Hồ bơi", "Quầy bar"],
+  latitude: 10.2150,  // Vĩ độ của Dương Đông, Phú Quốc
+  longitude: 103.9590 // Kinh độ của Dương Đông, Phú Quốc
+});
 
-    await this.createAccommodation({
-      name: "Fusion Resort Phu Quoc",
-      location_id: phuQuoc.id,
-      address: "Vung Bau, Phú Quốc",
-      type_id: resort.id,
-      rating: 4.8,
-      price_per_night: 4500000,
-      Breakfast: true,
-      is_recommended: false,
-      price_difference: 2500000,
-      image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
-      features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"]
-    });
+await this.createAccommodation({
+  name: "Fusion Resort Phu Quoc",
+  location_id: phuQuoc.id,
+  address: "Vung Bau, Phú Quốc",
+  type_id: resort.id,
+  checkin_time: "14:00",
+  checkout_time: "12:00",
+  rating: 4.8,
+  price_per_night: 4500000,
+  Breakfast: true,
+  is_recommended: false,
+  price_difference: 2500000,
+  image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
+  features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"],
+  latitude: 10.3478,  // Vĩ độ của Vũng Bầu, Phú Quốc
+  longitude: 103.8600 // Kinh độ của Vũng Bầu, Phú Quốc
+});
 
-    await this.createAccommodation({
-      name: "Nam Nghi Resort",
-      location_id: phuQuoc.id,
-      address: "Mong Tay, Phú Quốc",
-      type_id: resort.id,
-      rating: 4.5,
-      price_per_night: 1500000,
-      is_recommended: false,
-      Breakfast: true,
-      price_difference: -500000,
-      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
-      features: ["Bãi biển", "Hồ bơi", "Nhà hàng", "Bar"]
-    });
+await this.createAccommodation({
+  name: "Nam Nghi Resort",
+  location_id: phuQuoc.id,
+  address: "Mong Tay, Phú Quốc",
+  type_id: resort.id,
+  checkin_time: "14:00",
+  checkout_time: "12:00",
+  rating: 4.5,
+  price_per_night: 1500000,
+  is_recommended: false,
+  Breakfast: true,
+  price_difference: -500000,
+  image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
+  features: ["Bãi biển", "Hồ bơi", "Nhà hàng", "Bar"],
+  latitude: 10.4068,  // Vĩ độ của Móng Tay, Phú Quốc
+  longitude: 103.9305 // Kinh độ của Móng Tay, Phú Quốc
+});
 
-    await this.createAccommodation({
-      name: "Novotel Hạ Long Resort",
-      location_id: haLong.id,
-      address: "Bãi Cháy, Hạ Long",
-      type_id: resort.id,
-      rating: 4.7,
-      price_per_night: 1625000,
-      Breakfast: true,
-      is_recommended: false,
-      price_difference: -375000,
-      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
-      features: ["Bãi biển", "Hồ bơi", "Quầy bar"]
-    });
+await this.createAccommodation({
+  name: "Novotel Hạ Long Resort",
+  location_id: haLong.id,
+  address: "Bãi Cháy, Hạ Long",
+  type_id: resort.id,
+  rating: 4.7,
+  checkin_time: "14:00",
+  checkout_time: "12:00",
+  price_per_night: 1625000,
+  Breakfast: true,
+  is_recommended: false,
+  price_difference: -375000,
+  image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
+  features: ["Bãi biển", "Hồ bơi", "Quầy bar"],
+  latitude: 20.9518,  // Vĩ độ của Bãi Cháy, Hạ Long
+  longitude: 107.0470 // Kinh độ của Bãi Cháy, Hạ Long
+});
 
-    await this.createAccommodation({
-      name: "Mercure Dalat",
-      location_id: daLat.id,
-      address: "Đà Lạt, Lâm Đồng",
-      type_id: hotel.id,
-      rating: 4.7,
-      price_per_night: 1625000,
-      is_recommended: false,
-      Breakfast: true,
-      price_difference: -375000,
-      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
-      features: ["Hồ bơi", "Quầy bar"]
-    });
+await this.createAccommodation({
+  name: "Mercure Dalat",
+  location_id: daLat.id,
+  address: "Đà Lạt, Lâm Đồng",
+  type_id: hotel.id,
+  rating: 4.7,
+  checkin_time: "14:00",
+  checkout_time: "12:00",
+  price_per_night: 1625000,
+  is_recommended: false,
+  Breakfast: true,
+  price_difference: -375000,
+  image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
+  features: ["Hồ bơi", "Quầy bar"],
+  latitude: 11.9416,  // Vĩ độ của trung tâm Đà Lạt
+  longitude: 108.4383 // Kinh độ của trung tâm Đà Lạt
+});
 
-    await this.createAccommodation({
-      name: "Radisson Blu Cam Ranh",
-      location_id: nhaTrang.id,
-      address: "Cam Ranh, Khánh Hòa",
-      type_id: resort.id,
-      rating: 4.8,
-      price_per_night: 2500000,
-      is_recommended: false,
-      Breakfast: true,
-      price_difference: 1000000,
-      image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
-      features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"]
-    });
-    console.log("Accommodations:", Array.from(this.accommodations.values()));
+await this.createAccommodation({
+  name: "Radisson Blu Cam Ranh",
+  location_id: nhaTrang.id,
+  address: "Cam Ranh, Khánh Hòa",
+  type_id: resort.id,
+  rating: 4.8,
+  checkin_time: "14:00",
+  checkout_time: "12:00",
+  price_per_night: 2500000,
+  is_recommended: false,
+  Breakfast: true,
+  price_difference: 1000000,
+  image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
+  features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"],
+  latitude: 11.9127,  // Vĩ độ của Cam Ranh, Nha Trang
+  longitude: 109.2208 // Kinh độ của Cam Ranh, Nha Trang
+});
+
+console.log("Accommodations:", Array.from(this.accommodations.values()));
 
     // Attractions
     await this.createAttraction({
