@@ -2,6 +2,7 @@ import { createContext, useContext, useState, ReactNode } from "react";
 import { type InsertTrip } from "@shared/schema";
 
 // Define the trip context interface extending InsertTrip
+// Trong TripContext, sửa interface TripContextData
 interface TripContextData extends Partial<InsertTrip> {
   tripId?: number;
   origin_id?: number;
@@ -19,12 +20,24 @@ interface TripContextData extends Partial<InsertTrip> {
   selectedDepartureOption?: number;
   selectedReturnOption?: number;
   selectedAccommodations?: { [key: number]: number | null };
-  selectedAttractions?: { 
+  selectedAttractions?: {
     attractionId: number;
     day: number;
     timeSlot?: string;
+    adults: number;
+    children: number;
+    childrenHeights: string[];
+    usageDate: string;
   }[];
+  bookingInfo?: any;
+  basePrice?: number; // Giá phương tiện + chỗ ở từ StepTwo
+  attractionsTotalPrice?: number; // Giá điểm tham quan từ StepThree
   totalPrice?: number;
+  additionalServices?: {
+    insurance: number;
+    sim: number;
+    guide: number;
+  };
 }
 
 // Define the context interface
@@ -47,7 +60,8 @@ const defaultTripData: TripContextData = {
   selectedReturnOption: undefined,
   selectedAccommodations: {},
   selectedAttractions: [],
-  totalPrice: 0
+  totalPrice: 0,
+  additionalServices: { insurance: 0, sim: 0, guide: 0 },
 };
 
 // Create the provider component

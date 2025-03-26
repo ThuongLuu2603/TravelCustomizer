@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTripContext } from "@/lib/trip-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,30 +13,74 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 
 export default function StepFive() {
-  const { tripData, resetTripData } = useTripContext();
+  const { tripData, resetTripData, setCurrentStep } = useTripContext();
   const [paymentMethod, setPaymentMethod] = useState<string>("credit_card");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
 
-  // Sử dụng snake_case theo tripData
+  const basePrice = Number(tripData.totalPrice) || 0;
+
   const { data: originLocation } = useQuery({
     queryKey: [`/api/locations/${tripData.origin_id}`],
     enabled: !!tripData.origin_id,
   });
+
   const { data: destinationLocation } = useQuery({
     queryKey: [`/api/locations/${tripData.destination_id}`],
     enabled: !!tripData.destination_id,
   });
 
-  // Hàm format ngày hiển thị
+  const { data: transportationSummary } = useQuery({
+    queryKey: [
+      `/api/transportation-options?originId=${tripData.origin_id}&destinationId=${tripData.destination_id}`,
+    ],
+    enabled: !!(
+      tripData.origin_id &&
+      tripData.destination_id &&
+      tripData.selectedDepartureOption &&
+      tripData.selectedReturnOption
+    ),
+    select: (data) => {
+      const originalDepId = Math.floor(tripData.selectedDepartureOption / 100);
+      const originalRetId = Math.floor(tripData.selectedReturnOption / 100);
+      const depOption = data.find((option: any) => option.id === originalDepId);
+      const retOption = data.find((option: any) => option.id === originalRetId);
+      return { depOption, retOption };
+    },
+  });
+  const { data: attractions } = useQuery({
+    queryKey: [`/api/attractions?locationId=${tripData.destination_id}`],
+    enabled: !!tripData.destination_id,
+    select: (data) =>
+      data.filter((attr: any) =>
+        tripData.selectedAttractions?.some((item: any) => item.attractionId === attr.id)
+      ),
+  });
+
+  const { data: accommodationsSummary } = useQuery({
+    queryKey: ["accommodationsSummary", tripData.accommodations?.map(a => a.location)],
+    queryFn: async () => {
+      const results = await Promise.all(
+        (tripData.accommodations || []).map(accom => 
+          fetch(`/api/accommodations?locationId=${accom.location}`).then(res => res.json())
+        )
+      );
+      const selectedAccomIds = tripData.selectedAccommodations ? Object.values(tripData.selectedAccommodations) : [];
+      return results.flat().filter((accom: any) => selectedAccomIds.includes(accom.id)).map((accom: any) => {
+        const tripAccom = tripData.accommodations.find(a => tripData.selectedAccommodations[a.id] === accom.id);
+        return { ...accom, checkIn: tripAccom?.checkIn, checkOut: tripAccom?.checkOut };
+      });
+    },
+    enabled: !!tripData.accommodations && tripData.accommodations.length > 0,
+  });
+
   const formatDate = (date: Date | string | undefined) => {
     if (!date) return "";
     return format(new Date(date), "dd/MM/yyyy", { locale: vi });
   };
 
-  // Tính số ngày chuyến đi
   const getTripDuration = () => {
     if (tripData.start_date && tripData.end_date) {
       const start = new Date(tripData.start_date);
@@ -46,12 +90,47 @@ export default function StepFive() {
     return 0;
   };
 
-  // Xử lý thanh toán
-  const handlePaymentSubmit = async () => {
-    // (Bạn có thể thêm validatePayment nếu cần)
+  const validatePayment = () => {
+    if (paymentMethod === "credit_card") {
+      const cardNumber = (document.getElementById("card_number") as HTMLInputElement)?.value;
+      const cardName = (document.getElementById("card_name") as HTMLInputElement)?.value;
+      const expDate = (document.getElementById("exp_date") as HTMLInputElement)?.value;
+      const cvv = (document.getElementById("cvv") as HTMLInputElement)?.value;
+      if (!cardNumber || !cardName || !expDate || !cvv) {
+        toast({
+          title: "Thiếu thông tin",
+          description: "Vui lòng điền đầy đủ thông tin thẻ",
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (cardNumber.length < 16) {
+        toast({
+          title: "Số thẻ không hợp lệ",
+          description: "Vui lòng kiểm tra lại số thẻ",
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (cvv.length < 3) {
+        toast({
+          title: "Mã CVV không hợp lệ",
+          description: "Vui lòng kiểm tra lại mã CVV",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handlePaymentSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!validatePayment()) return;
     setIsSubmitting(true);
+
     try {
-      // Tạo chuyến đi
+      // Gửi yêu cầu tạo chuyến đi
       const response = await apiRequest("POST", "/api/trips", {
         origin_id: tripData.origin_id,
         destination_id: tripData.destination_id,
@@ -65,30 +144,40 @@ export default function StepFive() {
       });
       const createdTrip = await response.json();
 
-      // Thêm thông tin lưu trú
+      // Xử lý accommodations
       if (tripData.selectedAccommodations && tripData.accommodations) {
-        for (let i = 0; i < tripData.selectedAccommodations.length; i++) {
-          const accommodationId = tripData.selectedAccommodations[i];
-          const accommodationData = tripData.accommodations[i];
+        for (const key of Object.keys(tripData.selectedAccommodations)) {
+          const index = Number(key);
+          const accommodationId = tripData.selectedAccommodations[index];
+          const accommodationData = tripData.accommodations[index];
+
           if (accommodationId && accommodationData) {
+            // Chuyển đổi checkIn và checkOut sang định dạng chuỗi YYYY-MM-DD
+            const formatDateForAPI = (date: Date | undefined) => {
+              if (!date) return undefined;
+              return format(new Date(date), "yyyy-MM-dd");
+            };
+
             await apiRequest("POST", `/api/trips/${createdTrip.id}/accommodations`, {
               accommodation_id: accommodationId,
               location: accommodationData.location,
-              check_in_date: accommodationData.checkIn,
-              check_out_date: accommodationData.checkOut,
+              check_in_date: formatDateForAPI(accommodationData.checkIn),
+              check_out_date: formatDateForAPI(accommodationData.checkOut),
             });
           }
         }
       }
 
-      // Thêm thông tin vận chuyển
+      // Xử lý transportation
       if (tripData.selectedTransportation) {
         await apiRequest("POST", `/api/trips/${createdTrip.id}/transportations`, {
           transportation_option_id: tripData.selectedTransportation,
         });
+      } else {
+        console.warn("Không có thông tin phương tiện di chuyển được chọn.");
       }
 
-      // Thêm điểm tham quan
+      // Xử lý attractions
       if (tripData.selectedAttractions && tripData.selectedAttractions.length > 0) {
         for (const attraction of tripData.selectedAttractions) {
           await apiRequest("POST", `/api/trips/${createdTrip.id}/attractions`, {
@@ -97,15 +186,19 @@ export default function StepFive() {
             time_slot: attraction.timeSlot || "morning",
           });
         }
+      } else {
+        console.warn("Không có điểm tham quan nào được chọn.");
       }
 
+      // Hiển thị thông báo thành công
       toast({
         title: "Thanh toán thành công",
         description: "Chuyến đi của bạn đã được xác nhận",
       });
       setIsSuccess(true);
     } catch (error) {
-      console.error("Payment error:", error);
+      // Ghi chi tiết lỗi vào console để debug
+      console.error("Chi tiết lỗi thanh toán:", error);
       toast({
         title: "Lỗi thanh toán",
         description: "Đã xảy ra lỗi trong quá trình thanh toán. Vui lòng thử lại sau.",
@@ -137,13 +230,17 @@ export default function StepFive() {
           <div className="bg-blue-50 p-4 rounded-lg mb-6 text-left">
             <p className="font-medium text-gray-800 mb-1">Thông tin chuyến đi:</p>
             <p className="text-sm text-gray-600 mb-1">
-              <span className="font-medium">Mã đặt chỗ:</span> TJ-{Math.floor(100000 + Math.random() * 900000)}
+              <span className="font-medium">Mã đặt chỗ:</span> TJ-
+              {Math.floor(100000 + Math.random() * 900000)}
             </p>
             <p className="text-sm text-gray-600 mb-1">
-              <span className="font-medium">Ngày:</span> {format(new Date(tripData.start_date), "dd/MM/yyyy", { locale: vi })} - {format(new Date(tripData.end_date), "dd/MM/yyyy", { locale: vi })}
+              <span className="font-medium">Ngày:</span>{" "}
+              {format(new Date(tripData.start_date), "dd/MM/yyyy", { locale: vi })} -{" "}
+              {format(new Date(tripData.end_date), "dd/MM/yyyy", { locale: vi })}
             </p>
             <p className="text-sm text-gray-600">
-              <span className="font-medium">Hành khách:</span> {tripData.adults} người lớn, {tripData.children} trẻ em
+              <span className="font-medium">Hành khách:</span> {tripData.adults} người lớn,{" "}
+              {tripData.children} trẻ em
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -166,7 +263,6 @@ export default function StepFive() {
           Bước 5: Thanh toán
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Payment Methods */}
           <div className="lg:col-span-2">
             <Card className="border border-gray-200 shadow-sm">
               <CardHeader className="bg-gray-50 p-4">
@@ -225,7 +321,7 @@ export default function StepFive() {
                     </div>
                     <div>
                       <Label htmlFor="card_name">Tên chủ thẻ</Label>
-                      <Input id="card_name" placeholder="NGUYEN VAN A" />
+                      <Input id="card_name" placeholder="LUU NGOC THUONG" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -265,7 +361,7 @@ export default function StepFive() {
                     <ul className="space-y-2 text-sm">
                       <li><span className="font-medium">Ngân hàng:</span> Vietcombank</li>
                       <li><span className="font-medium">Số tài khoản:</span> 1234567890</li>
-                      <li><span className="font-medium">Tên tài khoản:</span> CONG TY DU LICH TRAVEL JOURNEY</li>
+                      <li><span className="font-medium">Tên tài khoản:</span> CONG TY DU LICH MARCH MARCH</li>
                       <li><span className="font-medium">Số tiền:</span> {tripData.totalPrice?.toLocaleString()}₫</li>
                       <li>
                         <span className="font-medium">Nội dung:</span> TJ-{tripData.origin_id}{tripData.destination_id}-
@@ -289,14 +385,12 @@ export default function StepFive() {
             </Card>
           </div>
 
-          {/* Order Summary */}
           <div className="lg:col-span-1">
             <Card className="border border-gray-200 shadow-sm">
               <CardHeader className="bg-gray-50 p-4">
                 <CardTitle className="text-xl font-bold">Tóm tắt chuyến đi</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
-                {/* Trip Overview */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-gray-700">Thông tin chuyến đi</h3>
                   <div className="grid grid-cols-2 gap-y-2">
@@ -313,44 +407,61 @@ export default function StepFive() {
                       {tripData.end_date && formatDate(tripData.end_date)}
                     </span>
                     <span className="text-sm text-gray-600">Số ngày:</span>
-                    <span className="text-sm font-medium text-gray-800">{tripData.start_date && tripData.end_date ? `${differenceInDays(new Date(tripData.end_date), new Date(tripData.start_date)) + 1} ngày` : ""}</span>
+                    <span className="text-sm font-medium text-gray-800">
+                      {tripData.start_date && tripData.end_date
+                        ? `${differenceInDays(
+                            new Date(tripData.end_date),
+                            new Date(tripData.start_date)
+                          ) + 1} ngày`
+                        : ""}
+                    </span>
                     <span className="text-sm text-gray-600">Hành khách:</span>
                     <span className="text-sm font-medium text-gray-800">
                       {tripData.adults} NL, {tripData.children} TE
                     </span>
                   </div>
                 </div>
-
-                {/* Price Breakdown */}
                 <div className="border-t border-gray-200 pt-4">
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">Chi phí</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-base text-gray-600">Di chuyến + Lưu trú:</span>
-                      <span className="text-base font-medium text-gray-800">{basePrice.toLocaleString()}₫</span>
+                      <span className="text-base text-gray-600">Di chuyển + Lưu trú:</span>
+                      <span className="text-base font-medium text-gray-800">
+                        {basePrice.toLocaleString()}₫
+                      </span>
                     </div>
-                    {attractions && attractions.length > 0 && attractions.map((attr: any) => (
-                      <div key={attr.id} className="flex justify-between">
-                        <span className="text-base text-gray-600">{attr.name}:</span>
-                        <span className="text-base font-medium text-gray-800">{Number(attr.price).toLocaleString()}₫</span>
-                      </div>
-                    ))}
-                    {additionalServices.insurance > 0 && (
+                    {attractions && attractions.length > 0 ? (
+                      attractions.map((attr: any) => (
+                        <div key={attr.id} className="flex justify-between">
+                          <span className="text-base text-gray-600">{attr.name}:</span>
+                          <span className="text-base font-medium text-gray-800">
+                            {Number(attr.price).toLocaleString()}₫
+                          </span>
+                        </div>
+                      ))
+                    ) : null}
+                    {tripData.additionalServices?.insurance > 0 && (
                       <div className="flex justify-between">
                         <span className="text-base text-gray-600">Bảo hiểm:</span>
-                        <span className="text-base font-medium text-gray-800">{additionalServices.insurance.toLocaleString()}₫</span>
+                        <span className="text-base font-medium text-gray-800">
+                          {tripData.additionalServices.insurance.toLocaleString()}₫
+                        </span>
                       </div>
                     )}
-                    {additionalServices.sim > 0 && (
+                    {tripData.additionalServices?.sim > 0 && (
                       <div className="flex justify-between">
                         <span className="text-base text-gray-600">Sim 4G:</span>
-                        <span className="text-base font-medium text-gray-800">{additionalServices.sim.toLocaleString()}₫</span>
+                        <span className="text-base font-medium text-gray-800">
+                          {tripData.additionalServices.sim.toLocaleString()}₫
+                        </span>
                       </div>
                     )}
-                    {additionalServices.guide > 0 && (
+                    {tripData.additionalServices?.guide > 0 && (
                       <div className="flex justify-between">
                         <span className="text-base text-gray-600">Hướng dẫn viên:</span>
-                        <span className="text-base font-medium text-gray-800">{additionalServices.guide.toLocaleString()}₫</span>
+                        <span className="text-base font-medium text-gray-800">
+                          {tripData.additionalServices.guide.toLocaleString()}₫
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between items-center font-bold mt-3">
@@ -359,54 +470,64 @@ export default function StepFive() {
                         {(
                           basePrice +
                           (attractions?.reduce((sum: number, attr: any) => sum + Number(attr.price), 0) || 0) +
-                          additionalServices.insurance +
-                          additionalServices.sim +
-                          additionalServices.guide
+                          (tripData.additionalServices?.insurance || 0) +
+                          (tripData.additionalServices?.sim || 0) +
+                          (tripData.additionalServices?.guide || 0)
                         ).toLocaleString()}₫
                       </span>
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Đã bao gồm thuế và phí</p>
                 </div>
-
-                {/* Thông tin di chuyển & lưu trú */}
                 <div className="border-t border-gray-200 pt-4">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Thông tin di chuyển & lưu trú</h3>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    Thông tin di chuyển & lưu trú
+                  </h3>
                   <div className="space-y-4">
-                    {/* Di chuyển */}
                     <div>
                       <p className="text-sm font-semibold text-gray-600">Chiều đi:</p>
-                      {transportationSummary && transportationSummary.depOption ? (
+                      {tripData.selectedDepartureOption ? (
                         <div className="text-sm text-gray-600">
-                          {transportationSummary.depOption.provider} - {transportationSummary.depOption.departure_flight_number} ( {transportationSummary.depOption.departure_time} - {transportationSummary.depOption.departure_arrival_time || "Chưa xác định"} )
+                          {transportationSummary?.depOption
+                            ? `${transportationSummary.depOption.provider} - ${
+                                transportationSummary.depOption.departure_flight_number
+                              } ( ${transportationSummary.depOption.departure_time} - ${
+                                transportationSummary.depOption.departure_arrival_time || "Chưa xác định"
+                              } )`
+                            : "Chưa có thông tin chiều đi."}
                         </div>
                       ) : (
                         <p className="text-sm text-gray-600">Chưa có thông tin chiều đi.</p>
                       )}
                       <p className="text-sm text-gray-600">
                         <span className="font-semibold">Hành lý:</span>{" "}
-                        {transportationSummary && transportationSummary.depOption
+                        {transportationSummary?.depOption
                           ? transportationSummary.depOption.departure_baggage || "Chưa xác định"
                           : ""}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-600">Chiều về:</p>
-                      {transportationSummary && transportationSummary.retOption ? (
+                      {tripData.selectedReturnOption ? (
                         <div className="text-sm text-gray-600">
-                          {transportationSummary.retOption.provider} - {transportationSummary.retOption.return_flight_number} ( {transportationSummary.retOption.return_time} - {transportationSummary.retOption.return_arrival_time || "Chưa xác định"} )
+                          {transportationSummary?.retOption
+                            ? `${transportationSummary.retOption.provider} - ${
+                                transportationSummary.retOption.return_flight_number
+                              } ( ${transportationSummary.retOption.return_time} - ${
+                                transportationSummary.retOption.return_arrival_time || "Chưa xác định"
+                              } )`
+                            : "Chưa có thông tin chiều về."}
                         </div>
                       ) : (
                         <p className="text-sm text-gray-600">Chưa có thông tin chiều về.</p>
                       )}
                       <p className="text-sm text-gray-600">
                         <span className="font-semibold">Hành lý:</span>{" "}
-                        {transportationSummary && transportationSummary.retOption
+                        {transportationSummary?.retOption
                           ? transportationSummary.retOption.return_baggage || "Chưa xác định"
                           : ""}
                       </p>
                     </div>
-                    {/* Lưu trú */}
                     <div>
                       <p className="text-sm font-semibold text-gray-600">Lưu trú:</p>
                       {accommodationsSummary && accommodationsSummary.length > 0 ? (
@@ -443,28 +564,43 @@ export default function StepFive() {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
       <div className="flex justify-between p-6 pt-0">
-        <Button variant="outline" onClick={() => setCurrentStep(3)} className="px-4 py-2">
-          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <Button variant="outline" onClick={() => setCurrentStep(4)} className="px-4 py-2">
+          <svg
+            className="w-5 h-5 mr-2"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15 18L9 12L15 6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
           Quay lại
         </Button>
-        <Button onClick={() => form.handleSubmit(handlePaymentSubmit)()} className="bg-primary hover:bg-blue-700 text-white px-6 py-2">
-          {isSubmitting ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Đang xử lý...
-            </>
-          ) : (
-            "Xác nhận thanh toán"
-          )}
-          <svg className="w-5 h-5 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <Button
+          onClick={handlePaymentSubmit}
+          disabled={isSubmitting}
+          className="bg-primary hover:bg-blue-700 text-white px-6 py-2"
+        >
+          {isSubmitting ? "Đang xử lý..." : "Xác nhận thanh toán"}
+          <svg
+            className="w-5 h-5 ml-2"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M9 6L15 12L9 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </Button>
       </div>

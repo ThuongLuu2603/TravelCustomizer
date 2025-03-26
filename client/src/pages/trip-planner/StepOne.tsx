@@ -99,7 +99,7 @@ export default function StepOne() {
         ? Math.max(...accommodations.map((a) => a.id)) + 1
         : 1;
 
-    setAccommodations([
+    const newAccommodations = [
       ...accommodations,
       {
         id: newId,
@@ -108,37 +108,84 @@ export default function StepOne() {
         checkIn: undefined,
         checkOut: undefined,
       },
-    ]);
+    ];
+
+    setAccommodations(newAccommodations);
+    syncAccommodationDates(newAccommodations);
   };
 
   // Handle removing accommodation
   const removeAccommodation = (id: number) => {
-    setAccommodations(accommodations.filter((a) => a.id !== id));
+    const newAccommodations = accommodations.filter((a) => a.id !== id);
+    setAccommodations(newAccommodations);
+    syncAccommodationDates(newAccommodations);
   };
 
   // Update accommodation field
   const updateAccommodation = (id: number, field: string, value: any) => {
-    setAccommodations(
-      accommodations.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              [field]:
-                field === "location"
-                  ? parseInt(value)
-                  : value
-                  ? startOfDay(value)
-                  : undefined,
-            }
-          : a
-      )
+    const newAccommodations = accommodations.map((a) =>
+      a.id === id
+        ? {
+            ...a,
+            [field]:
+              field === "location"
+                ? parseInt(value)
+                : value
+                ? startOfDay(value)
+                : undefined,
+          }
+        : a
     );
+
+    setAccommodations(newAccommodations);
+    syncAccommodationDates(newAccommodations);
   };
 
   // Hàm chuẩn hóa ngày để chỉ so sánh ngày, không so sánh giờ
   const normalizeDate = (date: Date | undefined): Date | undefined => {
     if (!date) return undefined;
     return startOfDay(date);
+  };
+
+  // Hàm đồng bộ ngày checkIn và checkOut
+  const syncAccommodationDates = (accoms: Accommodation[]) => {
+    if (!departureDate || !returnDate || accoms.length === 0) return;
+
+    const updatedAccommodations = accoms.map((accom, index, arr) => {
+      const newAccom = { ...accom };
+
+      // Điểm lưu trú 1: checkIn = departureDate
+      if (index === 0) {
+        newAccom.checkIn = startOfDay(new Date(departureDate));
+        // Nếu chưa có checkOut, đặt mặc định là ngày tiếp theo
+        if (!newAccom.checkOut) {
+          newAccom.checkOut =
+            arr.length === 1
+              ? startOfDay(new Date(returnDate)) // Nếu chỉ có 1 điểm lưu trú, checkOut = returnDate
+              : startOfDay(addDays(newAccom.checkIn, 1)); // Nếu có nhiều điểm lưu trú, checkOut mặc định là ngày tiếp theo
+        }
+      } else {
+        // Các điểm lưu trú sau: checkIn = checkOut của điểm trước đó
+        const prevAccom = arr[index - 1];
+        if (prevAccom.checkOut) {
+          newAccom.checkIn = startOfDay(new Date(prevAccom.checkOut));
+        }
+
+        // Điểm lưu trú cuối cùng: checkOut = returnDate
+        if (index === arr.length - 1) {
+          newAccom.checkOut = startOfDay(new Date(returnDate));
+        } else {
+          // Nếu không phải điểm cuối, đặt checkOut mặc định là ngày tiếp theo
+          if (!newAccom.checkOut) {
+            newAccom.checkOut = startOfDay(addDays(newAccom.checkIn!, 1));
+          }
+        }
+      }
+
+      return newAccom;
+    });
+
+    setAccommodations(updatedAccommodations);
   };
 
   // Validate form
@@ -198,23 +245,24 @@ export default function StepOne() {
     }
 
     // Validate accommodations
-    for (const accom of accommodations) {
+    for (let i = 0; i < accommodations.length; i++) {
+      const accom = accommodations[i];
       if (!accom.location) {
         toast({
           title: "Lỗi",
-          description: "Vui lòng chọn điểm lưu trú",
+          description: `Vui lòng chọn điểm lưu trú cho Điểm lưu trú ${i + 1}`,
           variant: "destructive",
         });
         return false;
       }
 
-      const effectiveCheckIn = normalizeDate(accom.checkIn || departureDate);
-      const effectiveCheckOut = normalizeDate(accom.checkOut || returnDate);
+      const effectiveCheckIn = normalizeDate(accom.checkIn);
+      const effectiveCheckOut = normalizeDate(accom.checkOut);
 
       if (!effectiveCheckIn) {
         toast({
           title: "Lỗi",
-          description: "Vui lòng chọn ngày nhận phòng",
+          description: `Vui lòng chọn ngày nhận phòng cho Điểm lưu trú ${i + 1}`,
           variant: "destructive",
         });
         return false;
@@ -223,7 +271,7 @@ export default function StepOne() {
       if (!effectiveCheckOut) {
         toast({
           title: "Lỗi",
-          description: "Vui lòng chọn ngày trả phòng",
+          description: `Vui lòng chọn ngày trả phòng cho Điểm lưu trú ${i + 1}`,
           variant: "destructive",
         });
         return false;
@@ -232,7 +280,7 @@ export default function StepOne() {
       if (effectiveCheckOut <= effectiveCheckIn) {
         toast({
           title: "Lỗi",
-          description: "Ngày trả phòng phải sau ngày nhận phòng",
+          description: `Ngày trả phòng phải sau ngày nhận phòng cho Điểm lưu trú ${i + 1}`,
           variant: "destructive",
         });
         return false;
@@ -241,7 +289,7 @@ export default function StepOne() {
       if (effectiveCheckIn < normalizeDate(departureDate)) {
         toast({
           title: "Lỗi",
-          description: "Ngày nhận phòng không thể trước ngày đi",
+          description: `Ngày nhận phòng không thể trước ngày đi cho Điểm lưu trú ${i + 1}`,
           variant: "destructive",
         });
         return false;
@@ -250,11 +298,37 @@ export default function StepOne() {
       if (effectiveCheckOut > normalizeDate(returnDate)) {
         toast({
           title: "Lỗi",
-          description: "Ngày trả phòng không thể sau ngày về",
+          description: `Ngày trả phòng không thể sau ngày về cho Điểm lưu trú ${i + 1}`,
           variant: "destructive",
         });
         return false;
       }
+
+      // Kiểm tra tính liên tục giữa các điểm lưu trú
+      if (i > 0) {
+        const prevAccom = accommodations[i - 1];
+        const prevCheckOut = normalizeDate(prevAccom.checkOut);
+        if (effectiveCheckIn?.getTime() !== prevCheckOut?.getTime()) {
+          toast({
+            title: "Lỗi",
+            description: `Ngày nhận phòng của Điểm lưu trú ${i + 1} phải bằng ngày trả phòng của Điểm lưu trú ${i}`,
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+    }
+
+    // Kiểm tra điểm lưu trú cuối cùng
+    const lastAccom = accommodations[accommodations.length - 1];
+    const lastCheckOut = normalizeDate(lastAccom.checkOut);
+    if (lastCheckOut?.getTime() !== normalizeDate(returnDate)?.getTime()) {
+      toast({
+        title: "Lỗi",
+        description: "Ngày trả phòng của điểm lưu trú cuối cùng phải bằng ngày về của chuyến đi",
+        variant: "destructive",
+      });
+      return false;
     }
 
     return true;
@@ -263,6 +337,9 @@ export default function StepOne() {
   // Handle form submission
   const handleSubmit = async () => {
     if (validateForm()) {
+      console.log("Origin selected:", origin); // Kiểm tra giá trị origin
+      console.log("Destination selected:", destination);
+
       const formatDate = (date: Date) => date.toLocaleDateString("en-CA");
 
       const originLocation = origins.find(
@@ -276,7 +353,6 @@ export default function StepOne() {
         ? destinationLocation.name
         : destination;
 
-      // Đảm bảo checkIn và checkOut không bao giờ là undefined
       const formattedAccommodations = accommodations.map((accom) => {
         const checkIn = accom.checkIn || departureDate!;
         const checkOut = accom.checkOut || returnDate!;
@@ -289,24 +365,23 @@ export default function StepOne() {
 
       const tripPayload = {
         trip: {
-          user_id: 1,
-          name: `Chuyến đi từ ${originName} đến ${destinationName}`,
-          origin_id: parseInt(origin),
-          destination_id: parseInt(destination),
-          start_date: departureDate ? formatDate(departureDate) : undefined,
-          end_date: returnDate ? formatDate(returnDate) : undefined,
-          total_price: 0,
-          status: "planning",
-          adults: parseInt(adults || "0"),
-          children: parseInt(children || "0"),
-        },
-        accommodations: formattedAccommodations.map((accom) => ({
-          // Sửa key thành check_in_date và check_out_date theo định dạng backend yêu cầu
-          checkIn: accom.checkIn,
-          checkOut: accom.checkOut,
-          location: parseInt(accom.location?.toString() || "0"),
-        })),
-      };
+            user_id: 1,
+            name: `Chuyến đi từ ${originName} đến ${destinationName}`,
+            origin_id: parseInt(origin),
+            destination_id: parseInt(destination),
+            start_date: departureDate ? formatDate(departureDate) : undefined,
+            end_date: returnDate ? formatDate(returnDate) : undefined,
+            total_price: 0,
+            status: "planning",
+            adults: parseInt(adults || "0"),
+            children: parseInt(children || "0"),
+          },
+          accommodations: formattedAccommodations.map((accom) => ({
+            checkIn: accom.checkIn,
+            checkOut: accom.checkOut,
+            location: parseInt(accom.location?.toString() || "0"),
+          })),
+        };
 
       console.log("Trip payload:", tripPayload); // Debug payload trước khi gửi
 
@@ -349,8 +424,9 @@ export default function StepOne() {
     }
   };
 
-  // Set default dates if needed
+  // Set default dates and update accommodations
   useEffect(() => {
+    // Đặt ngày mặc định cho departureDate và returnDate
     if (!departureDate) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -363,20 +439,8 @@ export default function StepOne() {
       setReturnDate(startOfDay(defaultReturnDate));
     }
 
-    // Cập nhật checkIn và checkOut cho accommodations
-    if (departureDate && returnDate && accommodations.length > 0) {
-      const updatedAccommodations = accommodations.map((accom, index, arr) => {
-        const newAccom = { ...accom };
-        if (!newAccom.checkIn && index === 0) {
-          newAccom.checkIn = startOfDay(new Date(departureDate));
-        }
-        if (!newAccom.checkOut && index === arr.length - 1) {
-          newAccom.checkOut = startOfDay(new Date(returnDate));
-        }
-        return newAccom;
-      });
-      setAccommodations(updatedAccommodations);
-    }
+    // Đồng bộ ngày khi departureDate hoặc returnDate thay đổi
+    syncAccommodationDates(accommodations);
   }, [departureDate, returnDate]);
 
   return (
@@ -802,6 +866,7 @@ export default function StepOne() {
                     }
                     minDate={departureDate}
                     maxDate={returnDate}
+                    disabled={index !== 0} // Vô hiệu hóa nếu không phải điểm lưu trú 1
                   />
                 </div>
                 <div>
@@ -833,6 +898,7 @@ export default function StepOne() {
                     }
                     minDate={departureDate}
                     maxDate={returnDate}
+                    disabled={index === accommodations.length - 1} // Vô hiệu hóa nếu là điểm lưu trú cuối cùng
                   />
                 </div>
               </div>
@@ -869,9 +935,9 @@ export default function StepOne() {
         <div className="px-6 pb-4 pt-2">
           <div className="bg-blue-50 p-3 rounded-md text-sm">
             <span className="font-medium">Thời gian chuyến đi: </span>
-            {differenceInDays(returnDate, departureDate)} ngày{" "}
+            {differenceInDays(returnDate, departureDate) + 1} ngày{" "}
             {differenceInDays(returnDate, departureDate) + 1 > 1
-              ? `(${differenceInDays(returnDate, departureDate) + 1} đêm)`
+              ? `(${differenceInDays(returnDate, departureDate)} đêm)`
               : ""}
           </div>
         </div>

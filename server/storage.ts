@@ -13,164 +13,124 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
-  // User methods from existing storage
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
-  // Location methods
   getLocations(type?: string): Promise<Location[]>;
   getLocation(id: number): Promise<Location | undefined>;
   createLocation(location: InsertLocation): Promise<Location>;
 
-  // Transportation methods
   getTransportationTypes(): Promise<TransportationType[]>;
   getTransportationOptions(originId: number, destinationId: number): Promise<TransportationOption[]>;
   getTransportationOption(id: number): Promise<TransportationOption | undefined>;
   createTransportationOption(option: InsertTransportationOption): Promise<TransportationOption>;
 
-  // Accommodation methods
   getAccommodationTypes(): Promise<AccommodationType[]>;
   getAccommodations(locationId: number): Promise<Accommodation[]>;
   getAccommodation(id: number): Promise<Accommodation | undefined>;
   createAccommodation(accommodation: InsertAccommodation): Promise<Accommodation>;
 
-  // Attraction methods
   getAttractions(locationId: number): Promise<Attraction[]>;
   getAttraction(id: number): Promise<Attraction | undefined>;
   createAttraction(attraction: InsertAttraction): Promise<Attraction>;
 
-  // Trip methods
   getTrips(userId?: number): Promise<Trip[]>;
   getTrip(id: number): Promise<Trip | undefined>;
   createTrip(trip: InsertTrip): Promise<Trip>;
   updateTrip(id: number, trip: Partial<InsertTrip>): Promise<Trip | undefined>;
 
-  // Trip Accommodation methods
   getTripAccommodations(tripId: number): Promise<TripAccommodation[]>;
   addTripAccommodation(tripAccommodation: InsertTripAccommodation): Promise<TripAccommodation>;
   removeTripAccommodation(id: number): Promise<boolean>;
 
-  // Trip Transportation methods
   getTripTransportations(tripId: number): Promise<TripTransportation[]>;
   addTripTransportation(tripTransportation: InsertTripTransportation): Promise<TripTransportation>;
   updateTripTransportation(id: number, tripTransportation: Partial<InsertTripTransportation>): Promise<TripTransportation | undefined>;
 
-  // Trip Attraction methods
   getTripAttractions(tripId: number): Promise<TripAttraction[]>;
   addTripAttraction(tripAttraction: InsertTripAttraction): Promise<TripAttraction>;
   removeTripAttraction(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private locations: Map<number, Location>;
-  private transportationTypes: Map<number, TransportationType>;
-  private transportationOptions: Map<number, TransportationOption>;
-  private accommodationTypes: Map<number, AccommodationType>;
-  private accommodations: Map<number, Accommodation>;
-  private attractions: Map<number, Attraction>;
-  private trips: Map<number, Trip>;
-  private tripAccommodations: Map<number, TripAccommodation>;
-  private tripTransportations: Map<number, TripTransportation>;
-  private tripAttractions: Map<number, TripAttraction>;
+  private users: Map<number, User> = new Map();
+  private locations: Map<number, Location> = new Map();
+  private transportationTypes: Map<number, TransportationType> = new Map();
+  private transportationOptions: Map<number, TransportationOption> = new Map();
+  private accommodationTypes: Map<number, AccommodationType> = new Map();
+  private accommodations: Map<number, Accommodation> = new Map();
+  private attractions: Map<number, Attraction> = new Map();
+  private trips: Map<number, Trip> = new Map();
+  private tripAccommodations: Map<number, TripAccommodation> = new Map();
+  private tripTransportations: Map<number, TripTransportation> = new Map();
+  private tripAttractions: Map<number, TripAttraction> = new Map();
 
-  private userCurrentId: number;
-  private locationCurrentId: number;
-  private transportationTypeCurrentId: number;
-  private transportationOptionCurrentId: number;
-  private accommodationTypeCurrentId: number;
-  private accommodationCurrentId: number;
-  private attractionCurrentId: number;
-  private tripCurrentId: number;
-  private tripAccommodationCurrentId: number;
-  private tripTransportationCurrentId: number;
-  private tripAttractionCurrentId: number;
+  private userCurrentId: number = 1;
+  private locationCurrentId: number = 1;
+  private transportationTypeCurrentId: number = 1;
+  private transportationOptionCurrentId: number = 1;
+  private accommodationTypeCurrentId: number = 1;
+  private accommodationCurrentId: number = 1;
+  private attractionCurrentId: number = 1;
+  private tripCurrentId: number = 1;
+  private tripAccommodationCurrentId: number = 1;
+  private tripTransportationCurrentId: number = 1;
+  private tripAttractionCurrentId: number = 1;
 
   constructor() {
-    this.users = new Map();
-    this.locations = new Map();
-    this.transportationTypes = new Map();
-    this.transportationOptions = new Map();
-    this.accommodationTypes = new Map();
-    this.accommodations = new Map();
-    this.attractions = new Map();
-    this.trips = new Map();
-    this.tripAccommodations = new Map();
-    this.tripTransportations = new Map();
-    this.tripAttractions = new Map();
-
-    this.userCurrentId = 1;
-    this.locationCurrentId = 1;
-    this.transportationTypeCurrentId = 1;
-    this.transportationOptionCurrentId = 1;
-    this.accommodationTypeCurrentId = 1;
-    this.accommodationCurrentId = 1;
-    this.attractionCurrentId = 1;
-    this.tripCurrentId = 1;
-    this.tripAccommodationCurrentId = 1;
-    this.tripTransportationCurrentId = 1;
-    this.tripAttractionCurrentId = 1;
-
-    // Gọi initializeData và xử lý async
     this.initializeData().catch(err => {
       console.error("Error initializing data:", err);
     });
   }
 
-  private async initializeData() {
+  private async initializeData(): Promise<void> {
     console.log("Initializing data...");
 
-    // Add transportation types
+    // Transportation Types
     const plane = await this.createTransportationType({ name: "Máy bay", icon: "bxs-plane" });
     const train = await this.createTransportationType({ name: "Tàu hỏa", icon: "bxs-train" });
     const bus = await this.createTransportationType({ name: "Xe khách", icon: "bxs-bus" });
     const car = await this.createTransportationType({ name: "Xe riêng", icon: "bxs-car" });
     console.log("Transportation types:", Array.from(this.transportationTypes.values()));
 
-    // Add sample locations
+    // Locations
     const haNoi = await this.createLocation({ 
       name: "Hà Nội", 
       type: "origin", 
       description: "Thủ đô của Việt Nam",
       image_url: ""
     });
-
     const hoChiMinh = await this.createLocation({ 
       name: "Hồ Chí Minh", 
       type: "origin", 
       description: "Thành phố lớn nhất Việt Nam",
       image_url: ""
     });
-
     const daNang = await this.createLocation({ 
       name: "Đà Nẵng", 
       type: "origin", 
       description: "Thành phố biển miền Trung",
       image_url: ""
     });
-
     const phuQuoc = await this.createLocation({ 
       name: "Phú Quốc", 
       type: "destination", 
       description: "Đảo ngọc của Việt Nam",
       image_url: ""
     });
-
     const daLat = await this.createLocation({ 
       name: "Đà Lạt", 
       type: "destination", 
       description: "Thành phố mộng mơ",
       image_url: ""
     });
-
     const nhaTrang = await this.createLocation({ 
       name: "Nha Trang", 
       type: "destination", 
       description: "Thành phố biển nổi tiếng",
       image_url: ""
     });
-
     const haLong = await this.createLocation({ 
       name: "Hạ Long", 
       type: "destination", 
@@ -179,52 +139,21 @@ export class MemStorage implements IStorage {
     });
     console.log("Locations:", Array.from(this.locations.values()));
 
-    // Add sample trip
-    const sampleTrip = await this.createTrip({
-      user_id: 1,
-      name: "Chuyến đi Phú Quốc",
-      origin_id: hoChiMinh.id,
-      destination_id: phuQuoc.id,
-      start_date: "2025-04-01",
-      end_date: "2025-04-05",
-      total_price: 0,
-      status: "planning",
-    });
-    console.log("Sample trip:", sampleTrip);
-
-    // Add sample trip accommodations
-    const tripAccommodation = await this.addTripAccommodation({
-      trip_id: sampleTrip.id,
-      checkIn: "2025-04-01",
-      checkOut: "2025-04-05",
-      location: phuQuoc.id.toString(), // Đảm bảo location là string nếu schema yêu cầu
-    });
-    console.log("Added trip accommodation:", tripAccommodation);
-    console.log("Trip accommodations:", Array.from(this.tripAccommodations.values()));
-
-    // Add transportation options
-    // Giả sử "plane" là type_id của máy bay
-    // hoChiMinh.id = 1, phuQuoc.id = 2
-
+    // Transportation Options
     await this.createTransportationOption({
       type_id: plane.id,
       provider: "Vietnam Airlines",
       origin_id: hoChiMinh.id,
       destination_id: phuQuoc.id,
-
-      // --- Chiều đi ---
       departure_flight_number: "VN123",
       departure_time: "08:00",
       departure_arrival_time: "09:15",
       departure_baggage: "20kg",
-
-      // --- Chiều về ---
       return_flight_number: "VN456",
       return_time: "17:30",
       return_arrival_time: "18:45",
       return_baggage: "20kg",
-
-      price: 2800000, // tổng giá khứ hồi
+      price: 2800000,
       is_recommended: false,
       price_difference: 0,
       features: ["Bay thẳng", "Hành lý 20kg"]
@@ -235,19 +164,14 @@ export class MemStorage implements IStorage {
       provider: "Vietjet Air",
       origin_id: hoChiMinh.id,
       destination_id: phuQuoc.id,
-
-      // Chiều đi
       departure_flight_number: "VJ789",
       departure_time: "10:30",
       departure_arrival_time: "11:45",
       departure_baggage: "7kg",
-
-      // Chiều về
       return_flight_number: "VJ790",
       return_time: "19:00",
       return_arrival_time: "20:15",
       return_baggage: "7kg",
-
       price: 1990000,
       is_recommended: true,
       price_difference: -810000,
@@ -259,20 +183,610 @@ export class MemStorage implements IStorage {
       provider: "Bamboo Airways",
       origin_id: hoChiMinh.id,
       destination_id: phuQuoc.id,
-
-      // Chiều đi
       departure_flight_number: "QH123",
       departure_time: "14:00",
       departure_arrival_time: "15:15",
       departure_baggage: "30kg (Thương gia)",
-
-      // Chiều về
       return_flight_number: "QH124",
       return_time: "21:00",
       return_arrival_time: "22:15",
       return_baggage: "30kg (Thương gia)",
-
       price: 3500000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: haNoi.id,
+      destination_id: phuQuoc.id,
+      departure_flight_number: "VJ123",
+      departure_time: "12:30",
+      departure_arrival_time: "14:40",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ124",
+      return_time: "15:00",
+      return_arrival_time: "17:10",
+      return_baggage: "7kg",
+      price: 2000000,
+      is_recommended: true,
+      price_difference: -500000,
+      features: ["Bay thẳng", "Hành lý 7kg"]
+    });
+
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: haNoi.id,
+      destination_id: phuQuoc.id,
+      departure_flight_number: "QH456",
+      departure_time: "15:45",
+      departure_arrival_time: "18:05",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH457",
+      return_time: "19:00",
+      return_arrival_time: "21:20",
+      return_baggage: "30kg (Thương gia)",
+      price: 3700000,
+      is_recommended: false,
+      price_difference: 1200000,
+      features: ["Bay thẳng", "Hạng thương gia", "Hành lý 30kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: hoChiMinh.id,
+      destination_id: daLat.id,
+      departure_flight_number: "VN138",
+      departure_time: "07:30",
+      departure_arrival_time: "08:25",
+      departure_baggage: "20kg",
+      return_flight_number: "VN139",
+      return_time: "16:00",
+      return_arrival_time: "16:55",
+      return_baggage: "20kg",
+      price: 2500000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: hoChiMinh.id,
+      destination_id: daLat.id,
+      departure_flight_number: "VJ362",
+      departure_time: "09:15",
+      departure_arrival_time: "10:10",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ363",
+      return_time: "18:30",
+      return_arrival_time: "19:25",
+      return_baggage: "7kg",
+      price: 1800000,
+      is_recommended: true,
+      price_difference: -700000,
+      features: ["Bay thẳng"]
+    });
+
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: hoChiMinh.id,
+      destination_id: daLat.id,
+      departure_flight_number: "QH202",
+      departure_time: "13:00",
+      departure_arrival_time: "13:55",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH203",
+      return_time: "20:00",
+      return_arrival_time: "20:55",
+      return_baggage: "30kg (Thương gia)",
+      price: 3200000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: haNoi.id,
+      destination_id: daLat.id,
+      departure_flight_number: "VN157",
+      departure_time: "08:00",
+      departure_arrival_time: "09:50",
+      departure_baggage: "20kg",
+      return_flight_number: "VN158",
+      return_time: "17:00",
+      return_arrival_time: "18:50",
+      return_baggage: "20kg",
+      price: 3000000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: haNoi.id,
+      destination_id: daLat.id,
+      departure_flight_number: "VJ401",
+      departure_time: "10:00",
+      departure_arrival_time: "11:50",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ402",
+      return_time: "19:00",
+      return_arrival_time: "20:50",
+      return_baggage: "7kg",
+      price: 2200000,
+      is_recommended: true,
+      price_difference: -800000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: haNoi.id,
+      destination_id: daLat.id,
+      departure_flight_number: "QH301",
+      departure_time: "14:30",
+      departure_arrival_time: "16:20",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH302",
+      return_time: "21:00",
+      return_arrival_time: "22:50",
+      return_baggage: "30kg (Thương gia)",
+      price: 3800000,
+      is_recommended: false,
+      price_difference: 800000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: daNang.id, // ID: 3
+      destination_id: phuQuoc.id, // ID: 4
+      departure_flight_number: "VN185",
+      departure_time: "08:05",
+      departure_arrival_time: "09:50",
+      departure_baggage: "20kg",
+      return_flight_number: "VN186",
+      return_time: "17:30",
+      return_arrival_time: "19:15",
+      return_baggage: "20kg",
+      price: 2900000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: daNang.id, // ID: 3
+      destination_id: phuQuoc.id, // ID: 4
+      departure_flight_number: "VJ635",
+      departure_time: "06:20",
+      departure_arrival_time: "08:05",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ636",
+      return_time: "18:00",
+      return_arrival_time: "19:45",
+      return_baggage: "7kg",
+      price: 2100000,
+      is_recommended: true,
+      price_difference: -800000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: daNang.id, // ID: 3
+      destination_id: phuQuoc.id, // ID: 4
+      departure_flight_number: "QH501",
+      departure_time: "14:00",
+      departure_arrival_time: "15:45",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH502",
+      return_time: "20:30",
+      return_arrival_time: "22:15",
+      return_baggage: "30kg (Thương gia)",
+      price: 3600000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    // Đà Nẵng -> Đà Lạt (bổ sung mới)
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: daNang.id, // ID: 3
+      destination_id: daLat.id, // ID: 5
+      departure_flight_number: "VN195",
+      departure_time: "07:00",
+      departure_arrival_time: "08:15",
+      departure_baggage: "20kg",
+      return_flight_number: "VN196",
+      return_time: "16:30",
+      return_arrival_time: "17:45",
+      return_baggage: "20kg",
+      price: 2600000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: daNang.id, // ID: 3
+      destination_id: daLat.id, // ID: 5
+      departure_flight_number: "VJ701",
+      departure_time: "09:00",
+      departure_arrival_time: "10:15",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ702",
+      return_time: "18:00",
+      return_arrival_time: "19:15",
+      return_baggage: "7kg",
+      price: 1900000,
+      is_recommended: true,
+      price_difference: -700000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: daNang.id, // ID: 3
+      destination_id: daLat.id, // ID: 5
+      departure_flight_number: "QH601",
+      departure_time: "13:30",
+      departure_arrival_time: "14:45",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH602",
+      return_time: "20:00",
+      return_arrival_time: "21:15",
+      return_baggage: "30kg (Thương gia)",
+      price: 3300000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+    // Hồ Chí Minh -> Nha Trang (bổ sung mới)
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: hoChiMinh.id, // ID: 2
+      destination_id: nhaTrang.id, // ID: 6
+      departure_flight_number: "VN134",
+      departure_time: "07:00",
+      departure_arrival_time: "08:10",
+      departure_baggage: "20kg",
+      return_flight_number: "VN135",
+      return_time: "17:00",
+      return_arrival_time: "18:10",
+      return_baggage: "20kg",
+      price: 2700000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: hoChiMinh.id,
+      destination_id: nhaTrang.id,
+      departure_flight_number: "VJ770",
+      departure_time: "09:30",
+      departure_arrival_time: "10:40",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ771",
+      return_time: "19:00",
+      return_arrival_time: "20:10",
+      return_baggage: "7kg",
+      price: 1900000,
+      is_recommended: true,
+      price_difference: -800000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: hoChiMinh.id,
+      destination_id: nhaTrang.id,
+      departure_flight_number: "QH301",
+      departure_time: "14:00",
+      departure_arrival_time: "15:10",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH302",
+      return_time: "20:30",
+      return_arrival_time: "21:40",
+      return_baggage: "30kg (Thương gia)",
+      price: 3400000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    // Hồ Chí Minh -> Hạ Long (bổ sung mới)
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: hoChiMinh.id, // ID: 2
+      destination_id: haLong.id, // ID: 7
+      departure_flight_number: "VN260",
+      departure_time: "08:00",
+      departure_arrival_time: "10:10",
+      departure_baggage: "20kg",
+      return_flight_number: "VN261",
+      return_time: "17:00",
+      return_arrival_time: "19:10",
+      return_baggage: "20kg",
+      price: 3200000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: hoChiMinh.id,
+      destination_id: haLong.id,
+      departure_flight_number: "VJ272",
+      departure_time: "10:00",
+      departure_arrival_time: "12:10",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ273",
+      return_time: "19:00",
+      return_arrival_time: "21:10",
+      return_baggage: "7kg",
+      price: 2400000,
+      is_recommended: true,
+      price_difference: -800000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: hoChiMinh.id,
+      destination_id: haLong.id,
+      departure_flight_number: "QH401",
+      departure_time: "14:30",
+      departure_arrival_time: "16:40",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH402",
+      return_time: "21:00",
+      return_arrival_time: "23:10",
+      return_baggage: "30kg (Thương gia)",
+      price: 3900000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    // Hà Nội -> Nha Trang (bổ sung mới)
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: haNoi.id, // ID: 1
+      destination_id: nhaTrang.id, // ID: 6
+      departure_flight_number: "VN155",
+      departure_time: "07:30",
+      departure_arrival_time: "09:20",
+      departure_baggage: "20kg",
+      return_flight_number: "VN156",
+      return_time: "17:30",
+      return_arrival_time: "19:20",
+      return_baggage: "20kg",
+      price: 3100000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: haNoi.id,
+      destination_id: nhaTrang.id,
+      departure_flight_number: "VJ781",
+      departure_time: "09:00",
+      departure_arrival_time: "10:50",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ782",
+      return_time: "19:00",
+      return_arrival_time: "20:50",
+      return_baggage: "7kg",
+      price: 2300000,
+      is_recommended: true,
+      price_difference: -800000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: haNoi.id,
+      destination_id: nhaTrang.id,
+      departure_flight_number: "QH501",
+      departure_time: "14:00",
+      departure_arrival_time: "15:50",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH502",
+      return_time: "20:30",
+      return_arrival_time: "22:20",
+      return_baggage: "30kg (Thương gia)",
+      price: 3800000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    // Hà Nội -> Hạ Long (bổ sung mới)
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: haNoi.id, // ID: 1
+      destination_id: haLong.id, // ID: 7
+      departure_flight_number: "VN165",
+      departure_time: "07:00",
+      departure_arrival_time: "07:45",
+      departure_baggage: "20kg",
+      return_flight_number: "VN166",
+      return_time: "16:00",
+      return_arrival_time: "16:45",
+      return_baggage: "20kg",
+      price: 2000000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: haNoi.id,
+      destination_id: haLong.id,
+      departure_flight_number: "VJ791",
+      departure_time: "09:00",
+      departure_arrival_time: "09:45",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ792",
+      return_time: "18:00",
+      return_arrival_time: "18:45",
+      return_baggage: "7kg",
+      price: 1400000,
+      is_recommended: true,
+      price_difference: -600000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: haNoi.id,
+      destination_id: haLong.id,
+      departure_flight_number: "QH601",
+      departure_time: "13:00",
+      departure_arrival_time: "13:45",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH602",
+      return_time: "20:00",
+      return_arrival_time: "20:45",
+      return_baggage: "30kg (Thương gia)",
+      price: 2700000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    // Đà Nẵng -> Nha Trang (bổ sung mới)
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: daNang.id, // ID: 3
+      destination_id: nhaTrang.id, // ID: 6
+      departure_flight_number: "VN191",
+      departure_time: "07:30",
+      departure_arrival_time: "08:40",
+      departure_baggage: "20kg",
+      return_flight_number: "VN192",
+      return_time: "17:00",
+      return_arrival_time: "18:10",
+      return_baggage: "20kg",
+      price: 2600000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: daNang.id,
+      destination_id: nhaTrang.id,
+      departure_flight_number: "VJ721",
+      departure_time: "09:00",
+      departure_arrival_time: "10:10",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ722",
+      return_time: "18:30",
+      return_arrival_time: "19:40",
+      return_baggage: "7kg",
+      price: 1800000,
+      is_recommended: true,
+      price_difference: -800000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: daNang.id,
+      destination_id: nhaTrang.id,
+      departure_flight_number: "QH701",
+      departure_time: "14:00",
+      departure_arrival_time: "15:10",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH702",
+      return_time: "20:30",
+      return_arrival_time: "21:40",
+      return_baggage: "30kg (Thương gia)",
+      price: 3300000,
+      is_recommended: false,
+      price_difference: 700000,
+      features: ["Bay thẳng", "Hạng thương gia"]
+    });
+
+    // Đà Nẵng -> Hạ Long (bổ sung mới)
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietnam Airlines",
+      origin_id: daNang.id, // ID: 3
+      destination_id: haLong.id, // ID: 7
+      departure_flight_number: "VN175",
+      departure_time: "08:00",
+      departure_arrival_time: "09:20",
+      departure_baggage: "20kg",
+      return_flight_number: "VN176",
+      return_time: "17:00",
+      return_arrival_time: "18:20",
+      return_baggage: "20kg",
+      price: 3000000,
+      is_recommended: false,
+      price_difference: 0,
+      features: ["Bay thẳng", "Hành lý 20kg"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Vietjet Air",
+      origin_id: daNang.id,
+      destination_id: haLong.id,
+      departure_flight_number: "VJ731",
+      departure_time: "10:00",
+      departure_arrival_time: "11:20",
+      departure_baggage: "7kg",
+      return_flight_number: "VJ732",
+      return_time: "19:00",
+      return_arrival_time: "20:20",
+      return_baggage: "7kg",
+      price: 2200000,
+      is_recommended: true,
+      price_difference: -800000,
+      features: ["Bay thẳng"]
+    });
+    await this.createTransportationOption({
+      type_id: plane.id,
+      provider: "Bamboo Airways",
+      origin_id: daNang.id,
+      destination_id: haLong.id,
+      departure_flight_number: "QH801",
+      departure_time: "14:30",
+      departure_arrival_time: "15:50",
+      departure_baggage: "30kg (Thương gia)",
+      return_flight_number: "QH802",
+      return_time: "21:00",
+      return_arrival_time: "22:20",
+      return_baggage: "30kg (Thương gia)",
+      price: 3700000,
       is_recommended: false,
       price_difference: 700000,
       features: ["Bay thẳng", "Hạng thương gia"]
@@ -288,57 +802,38 @@ export class MemStorage implements IStorage {
 
 
 
-    
-    await this.createTransportationOption({
-      type_id: plane.id,
-      provider: "Vietjet Air",
-      origin_id: haNoi.id,
-      destination_id: phuQuoc.id,
-      departure_time: "12:30",
-      arrival_time: "14:40",
-      duration: "2h 10m",
-      price: 2000000,
-      is_recommended: false,
-      price_difference: -500000,
-      features: ["Bay thẳng", "Hành lý 7kg"]
-    });
 
-    await this.createTransportationOption({
-      type_id: plane.id,
-      provider: "Bamboo Airways",
-      origin_id: haNoi.id,
-      destination_id: phuQuoc.id,
-      departure_time: "15:45",
-      arrival_time: "18:05",
-      duration: "2h 20m",
-      price: 3700000,
-      is_recommended: false,
-      price_difference: 1200000,
-      features: ["Bay thẳng", "Hạng thương gia", "Hành lý 30kg"]
-    });
+
+
+
+
+
+
+
+
+
+
+
+
     console.log("Transportation options:", Array.from(this.transportationOptions.values()));
 
-    // Add accommodation types
-    const hanoi = await this.createAccommodationType({ name: "Hà Nội" });
-    const hochiminh = await this.createAccommodationType({ name: "Hồ Chí Minh" });
-    const phuquoc = await this.createAccommodationType({ name: "Phú Quốc" });
-    const danang = await this.createAccommodationType({ name: "Đà Nẵng" });
-    const dalat = await this.createAccommodationType({ name: "Đà Lạt" });
-    const nhatrang = await this.createAccommodationType({ name: "Nha Trang" });
-    const halong = await this.createAccommodationType({ name: "Hạ Long" });
+    // Accommodation Types
+    const hotel = await this.createAccommodationType({ name: "Khách sạn" });
+    const resort = await this.createAccommodationType({ name: "Resort" });
     console.log("Accommodation types:", Array.from(this.accommodationTypes.values()));
 
-    // Add accommodations
+    // Accommodations
     await this.createAccommodation({
       name: "Vinpearl Resort & Spa",
       location_id: phuQuoc.id,
       address: "Bãi Dài, Phú Quốc",
-      type_id: phuquoc.id,
+      type_id: resort.id,
       rating: 5.0,
       price_per_night: 2000000,
       is_recommended: true,
       price_difference: 0,
-      image_url: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
+      Breakfast: true,
+      image_url: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9",
       features: ["Bãi biển", "Hồ bơi", "Spa", "Phòng gia đình"]
     });
 
@@ -346,12 +841,13 @@ export class MemStorage implements IStorage {
       name: "Novotel Phú Quốc Resort",
       location_id: phuQuoc.id,
       address: "Dương Đông, Phú Quốc",
-      type_id: phuquoc.id,
+      type_id: resort.id,
       rating: 4.7,
+      Breakfast: true,
       price_per_night: 1625000,
       is_recommended: false,
       price_difference: -375000,
-      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
+      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
       features: ["Bãi biển", "Hồ bơi", "Quầy bar"]
     });
 
@@ -359,51 +855,82 @@ export class MemStorage implements IStorage {
       name: "Fusion Resort Phu Quoc",
       location_id: phuQuoc.id,
       address: "Vung Bau, Phú Quốc",
-      type_id: phuquoc.id,
+      type_id: resort.id,
       rating: 4.8,
       price_per_night: 4500000,
+      Breakfast: true,
       is_recommended: false,
       price_difference: 2500000,
-      image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
+      image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
       features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"]
     });
-
-    await this.createAccommodation({
-      name: "Radisson Blu Cam Ranh",
-      location_id: nhatrang.id,
-      address: "Cam Ranh, Khánh Hòa",
-      type_id: nhatrang.id,
-      rating: 4.8,
-      price_per_night: 2500000,
-      is_recommended: false,
-      price_difference: 1000000,
-      image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
-      features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"]
-    });
-
-    
 
     await this.createAccommodation({
       name: "Nam Nghi Resort",
       location_id: phuQuoc.id,
       address: "Mong Tay, Phú Quốc",
-      type_id: phuquoc.id,
+      type_id: resort.id,
       rating: 4.5,
       price_per_night: 1500000,
       is_recommended: false,
+      Breakfast: true,
       price_difference: -500000,
-      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&h=400",
+      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
       features: ["Bãi biển", "Hồ bơi", "Nhà hàng", "Bar"]
+    });
+
+    await this.createAccommodation({
+      name: "Novotel Hạ Long Resort",
+      location_id: haLong.id,
+      address: "Bãi Cháy, Hạ Long",
+      type_id: resort.id,
+      rating: 4.7,
+      price_per_night: 1625000,
+      Breakfast: true,
+      is_recommended: false,
+      price_difference: -375000,
+      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
+      features: ["Bãi biển", "Hồ bơi", "Quầy bar"]
+    });
+
+    await this.createAccommodation({
+      name: "Mercure Dalat",
+      location_id: daLat.id,
+      address: "Đà Lạt, Lâm Đồng",
+      type_id: hotel.id,
+      rating: 4.7,
+      price_per_night: 1625000,
+      is_recommended: false,
+      Breakfast: true,
+      price_difference: -375000,
+      image_url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
+      features: ["Hồ bơi", "Quầy bar"]
+    });
+
+    await this.createAccommodation({
+      name: "Radisson Blu Cam Ranh",
+      location_id: nhaTrang.id,
+      address: "Cam Ranh, Khánh Hòa",
+      type_id: resort.id,
+      rating: 4.8,
+      price_per_night: 2500000,
+      is_recommended: false,
+      Breakfast: true,
+      price_difference: 1000000,
+      image_url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
+      features: ["Bãi biển riêng", "Spa cao cấp", "Hồ bơi vô cực", "Nhà hàng 5 sao"]
     });
     console.log("Accommodations:", Array.from(this.accommodations.values()));
 
-    // Add attractions
+    // Attractions
     await this.createAttraction({
       name: "Vinpearl Safari",
       location_id: phuQuoc.id,
       description: "Vườn thú bán hoang dã đầu tiên tại Việt Nam",
       price: 650000,
       duration: "3h",
+      opentime: "10:00",
+      closetime: "21:00",
       image_url: "",
       is_recommended: true
     });
@@ -414,6 +941,8 @@ export class MemStorage implements IStorage {
       description: "Một trong những bãi biển đẹp nhất Phú Quốc",
       price: 50000,
       duration: "4h",
+      opentime: "06:00",
+      closetime: "18:00",
       image_url: "",
       is_recommended: true
     });
@@ -424,22 +953,140 @@ export class MemStorage implements IStorage {
       description: "Cáp treo vượt biển dài nhất thế giới",
       price: 500000,
       duration: "2h",
+      opentime: "10:00",
+      closetime: "21:00",
       image_url: "",
       is_recommended: false
     });
-    
+
+    // Nha Trang (giữ nguyên và bổ sung thêm)
     await this.createAttraction({
-      name: "Vinwonder Nha Trang",
-      location_id: nhatrang.id,
-      description: "Công viên giải trí ở Nha Trang",
+      name: "Vinwonders Nha Trang",
+      location_id: nhaTrang.id, // ID: 6
+      description: "Công viên giải trí ở Nha Trang",
       price: 750000,
+      opentime: "10:00",
+      closetime: "21:00",
       duration: "4h",
       image_url: "",
       is_recommended: false
     });
 
+    await this.createAttraction({
+      name: "Tháp Bà Ponagar",
+      location_id: nhaTrang.id, // ID: 6
+      description: "Di tích lịch sử Chăm Pa cổ kính",
+      price: 22000,
+      duration: "1h",
+      opentime: "06:00",
+      closetime: "16:00",
+      image_url: "",
+      is_recommended: true
+    });
 
-    
+    await this.createAttraction({
+      name: "Đảo Hòn Mun",
+      location_id: nhaTrang.id, // ID: 6
+      description: "Khu vực lặn biển ngắm san hô nổi tiếng",
+      price: 300000,
+      duration: "3h",
+      opentime: "10:00",
+      closetime: "16:00",
+      image_url: "",
+      is_recommended: true
+    });
+
+    // Đà Lạt (bổ sung mới)
+    await this.createAttraction({
+      name: "Hồ Xuân Hương",
+      location_id: daLat.id, // ID: 5
+      description: "Hồ nước nổi tiếng giữa lòng thành phố Đà Lạt",
+      price: 0,
+      duration: "2h",
+      opentime: "00:00",
+      closetime: "23:59",
+      image_url: "",
+      is_recommended: true
+    });
+
+    await this.createAttraction({
+      name: "Thung Lũng Tình Yêu",
+      location_id: daLat.id, // ID: 5
+      description: "Địa điểm lãng mạn với cảnh quan thiên nhiên tuyệt đẹp",
+      price: 250000,
+      duration: "3h",
+      opentime: "08:00",
+      closetime: "18:00",
+      image_url: "",
+      is_recommended: true
+    });
+
+    await this.createAttraction({
+      name: "Cáp treo Đà Lạt",
+      location_id: daLat.id, // ID: 5
+      description: "Trải nghiệm cáp treo ngắm toàn cảnh Đà Lạt",
+      price: 100000,
+      duration: "1h",
+      opentime: "08:00",
+      closetime: "16:00",
+      image_url: "",
+      is_recommended: false
+    });
+
+    // Hạ Long (bổ sung mới)
+    await this.createAttraction({
+      name: "Vịnh Hạ Long",
+      location_id: haLong.id, // ID: 7
+      description: "Kỳ quan thiên nhiên thế giới với hàng ngàn đảo đá",
+      price: 290000,
+      duration: "4h",
+      opentime: "00:00",
+      closetime: "23:59",
+      image_url: "",
+      is_recommended: true
+    });
+
+    await this.createAttraction({
+      name: "Hang Sửng Sốt",
+      location_id: haLong.id, // ID: 7
+      description: "Hang động lớn và đẹp nhất Vịnh Hạ Long",
+      price: 50000,
+      opentime: "10:00",
+      closetime: "16:00",
+      duration: "1h",
+      image_url: "",
+      is_recommended: true
+    });
+
+    await this.createAttraction({
+      name: "Cáp treo Nữ Hoàng",
+      location_id: haLong.id, // ID: 7
+      description: "Cáp treo ngắm toàn cảnh Vịnh Hạ Long từ trên cao",
+      price: 350000,
+      duration: "2h",
+      opentime: "08:00",
+      closetime: "21:00",
+      image_url: "",
+      is_recommended: false
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     console.log("Attractions:", Array.from(this.attractions.values()));
   }
 
@@ -449,9 +1096,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    return Array.from(this.users.values()).find(user => user.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -571,7 +1216,6 @@ export class MemStorage implements IStorage {
   async updateTrip(id: number, tripUpdate: Partial<InsertTrip>): Promise<Trip | undefined> {
     const trip = this.trips.get(id);
     if (!trip) return undefined;
-
     const updatedTrip = { ...trip, ...tripUpdate };
     this.trips.set(id, updatedTrip);
     return updatedTrip;
@@ -610,7 +1254,6 @@ export class MemStorage implements IStorage {
   async updateTripTransportation(id: number, update: Partial<InsertTripTransportation>): Promise<TripTransportation | undefined> {
     const transportation = this.tripTransportations.get(id);
     if (!transportation) return undefined;
-
     const updatedTransportation = { ...transportation, ...update };
     this.tripTransportations.set(id, updatedTransportation);
     return updatedTransportation;
